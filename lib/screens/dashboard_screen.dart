@@ -16,6 +16,10 @@ class Exercise {
   final int reps;
   final int holdTimeSec;
   final int restTimeSec;
+  final bool scheduleMorning;
+  final bool scheduleDay;
+  final bool scheduleEvening;
+  final bool isCompleted;
 
   Exercise({
     required this.id,
@@ -25,6 +29,10 @@ class Exercise {
     required this.reps,
     required this.holdTimeSec,
     required this.restTimeSec,
+    required this.scheduleMorning,
+    required this.scheduleDay,
+    required this.scheduleEvening,
+    required this.isCompleted,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -36,6 +44,10 @@ class Exercise {
       reps: json['reps'] ?? 10,
       holdTimeSec: json['hold_time_sec'] ?? 0,
       restTimeSec: json['rest_time_sec'] ?? 60,
+      scheduleMorning: json['schedule_morning'] ?? true,
+      scheduleDay: json['schedule_day'] ?? false,
+      scheduleEvening: json['schedule_evening'] ?? false,
+      isCompleted: json['is_completed'] ?? false,
     );
   }
 }
@@ -227,12 +239,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: exercises.length,
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemBuilder: (context, index) => _ExerciseFeedItem(exercise: exercises[index]),
+
+    // Stroke/neuro patients are often prescribed the same exercise for
+    // more than one session a day, so an exercise can appear in more than
+    // one time-of-day section below.
+    final morning = exercises.where((e) => e.scheduleMorning).toList();
+    final day = exercises.where((e) => e.scheduleDay).toList();
+    final evening = exercises.where((e) => e.scheduleEvening).toList();
+    final unscheduled = exercises
+        .where((e) => !e.scheduleMorning && !e.scheduleDay && !e.scheduleEvening)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (morning.isNotEmpty) _buildTimeSection('Morning', morning),
+        if (day.isNotEmpty) _buildTimeSection('Day', day),
+        if (evening.isNotEmpty) _buildTimeSection('Evening', evening),
+        if (unscheduled.isNotEmpty) _buildTimeSection('Anytime', unscheduled),
+      ],
+    );
+  }
+
+  Widget _buildTimeSection(String title, List<Exercise> exercises) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: exercises.length,
+            itemBuilder: (context, index) =>
+                _ExerciseFeedItem(key: ValueKey('${title}_${exercises[index].id}'), exercise: exercises[index]),
+          ),
+        ],
+      ),
     );
   }
 
@@ -263,7 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // ---------------------------------------------------------------------------
 class _ExerciseFeedItem extends StatefulWidget {
   final Exercise exercise;
-  const _ExerciseFeedItem({required this.exercise});
+  const _ExerciseFeedItem({super.key, required this.exercise});
 
   @override
   State<_ExerciseFeedItem> createState() => _ExerciseFeedItemState();
@@ -276,6 +329,16 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   bool _isSubmitting = false;
   bool _isQuickSubmitting = false;
   final TextEditingController _noteController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.exercise.isCompleted) {
+      _isDone = true;
+      _isSubmitted = true;
+      _selectedFeedback = 'normal';
+    }
+  }
 
   @override
   void dispose() {
@@ -396,7 +459,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
           // Mark Done button or feedback panel
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _isDone ? _buildFeedbackPanel() : _buildMarkDoneButton(),
+            child: _isDone ? _buildFeedbackPanel() : _buildActionRow(),
           ),
 
           const SizedBox(height: 8),
@@ -435,14 +498,14 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     );
   }
 
-  Widget _buildMarkDoneButton() {
+  Widget _buildActionRow() {
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
             onPressed: _isQuickSubmitting ? null : () => setState(() => _isDone = true),
-            icon: const Icon(Icons.check_circle_outline, size: 18),
-            label: const Text('Mark as Done'),
+            icon: const Icon(Icons.comment_outlined, size: 18),
+            label: const Text('Comment'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.greenAccent,
               side: const BorderSide(color: Colors.greenAccent),
