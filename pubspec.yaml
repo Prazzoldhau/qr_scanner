@@ -1,5 +1,5 @@
-name: qr_scanner
-description: A simple QR code scanner app.
+name: sajhya
+description: Sajhya Healthcare Patient Portal - Connect to your health records and exercises.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,14 +9,24 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
+  dio: ^5.4.0
+  dio_cookie_manager: ^3.1.0
+  cookie_jar: ^4.0.0
+  path_provider: ^2.0.0
   mobile_scanner: ^6.0.2
-  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#0A6EBD"
+  adaptive_icon_foreground: "assets/icon/icon.png"

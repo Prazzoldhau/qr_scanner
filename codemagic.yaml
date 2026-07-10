@@ -1,17 +1,17 @@
 workflows:
   android-release:
-    name: QR Scanner - Android
+    name: Sajhya - Android
     max_build_duration: 30
     instance_type: linux_x2
     environment:
       flutter: stable
       # To publish a signed release build, add a keystore in
       # Codemagic > Team settings > Code signing identities, then uncomment
-      # the two lines below (replace "qr_scanner_keystore" with your reference name).
+      # the two lines below (replace "sajhya_keystore" with your reference name).
       # android_signing:
-      #   - qr_scanner_keystore
+      #   - sajhya_keystore
       vars:
-        PACKAGE_NAME: "com.example.qrscanner"
+        PACKAGE_NAME: "com.example.sajhya_patient_app"
     scripts:
       - name: Write key.properties (only if a keystore is configured)
         script: |
