@@ -274,12 +274,37 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   String? _selectedFeedback; // 'normal' | 'hard' | 'painful' | 'increased_symptom'
   bool _isSubmitted = false;
   bool _isSubmitting = false;
+  bool _isQuickSubmitting = false;
   final TextEditingController _noteController = TextEditingController();
 
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+
+  // Quick tick: mark done instantly with default 'normal' feedback,
+  // skipping the "how did it feel" panel entirely.
+  Future<void> _quickMarkDone() async {
+    setState(() => _isQuickSubmitting = true);
+    try {
+      await ApiService().submitFeedback(widget.exercise.id, 'normal', '');
+      if (mounted) {
+        setState(() {
+          _isDone = true;
+          _selectedFeedback = 'normal';
+          _isSubmitted = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isQuickSubmitting = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -411,17 +436,40 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   }
 
   Widget _buildMarkDoneButton() {
-    return OutlinedButton.icon(
-      onPressed: () => setState(() => _isDone = true),
-      icon: const Icon(Icons.check_circle_outline, size: 18),
-      label: const Text('Mark as Done'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.greenAccent,
-        side: const BorderSide(color: Colors.greenAccent),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(fontSize: 13),
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _isQuickSubmitting ? null : () => setState(() => _isDone = true),
+            icon: const Icon(Icons.check_circle_outline, size: 18),
+            label: const Text('Mark as Done'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.greenAccent,
+              side: const BorderSide(color: Colors.greenAccent),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              textStyle: const TextStyle(fontSize: 13),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: _isQuickSubmitting ? null : _quickMarkDone,
+          tooltip: 'Quick done (skip feedback)',
+          icon: _isQuickSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.greenAccent),
+                )
+              : const Icon(Icons.check, size: 20),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.greenAccent.withOpacity(0.15),
+            foregroundColor: Colors.greenAccent,
+            shape: const CircleBorder(),
+          ),
+        ),
+      ],
     );
   }
 
