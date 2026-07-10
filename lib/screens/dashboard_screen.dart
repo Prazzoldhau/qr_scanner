@@ -239,53 +239,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
-
-    // Stroke/neuro patients are often prescribed the same exercise for
-    // more than one session a day, so an exercise can appear in more than
-    // one time-of-day section below.
-    final morning = exercises.where((e) => e.scheduleMorning).toList();
-    final day = exercises.where((e) => e.scheduleDay).toList();
-    final evening = exercises.where((e) => e.scheduleEvening).toList();
-    final unscheduled = exercises
-        .where((e) => !e.scheduleMorning && !e.scheduleDay && !e.scheduleEvening)
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (morning.isNotEmpty) _buildTimeSection('Morning', morning),
-        if (day.isNotEmpty) _buildTimeSection('Day', day),
-        if (evening.isNotEmpty) _buildTimeSection('Evening', evening),
-        if (unscheduled.isNotEmpty) _buildTimeSection('Anytime', unscheduled),
-      ],
-    );
-  }
-
-  Widget _buildTimeSection(String title, List<Exercise> exercises) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: exercises.length,
-            itemBuilder: (context, index) =>
-                _ExerciseFeedItem(key: ValueKey('${title}_${exercises[index].id}'), exercise: exercises[index]),
-          ),
-        ],
-      ),
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: exercises.length,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      itemBuilder: (context, index) => _ExerciseFeedItem(exercise: exercises[index]),
     );
   }
 
@@ -454,6 +413,14 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
               ],
             ),
           ),
+          const SizedBox(height: 10),
+
+          // Prescribed schedule (as set by the physio) - shown here instead
+          // of grouping the whole feed into separate Morning/Day/Evening lists.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: _scheduleBadges(exercise),
+          ),
           const SizedBox(height: 12),
 
           // Mark Done button or feedback panel
@@ -494,6 +461,30 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _scheduleBadges(Exercise exercise) {
+    final badges = <Widget>[
+      if (exercise.scheduleMorning) _scheduleBadge('☀️', 'Morning'),
+      if (exercise.scheduleDay) _scheduleBadge('🌤️', 'Day'),
+      if (exercise.scheduleEvening) _scheduleBadge('🌙', 'Evening'),
+    ];
+    if (badges.isEmpty) return const SizedBox.shrink();
+    return Wrap(spacing: 8, runSpacing: 4, children: badges);
+  }
+
+  Widget _scheduleBadge(String emoji, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$emoji $label',
+        style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
       ),
     );
   }
