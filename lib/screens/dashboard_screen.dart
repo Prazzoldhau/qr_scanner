@@ -726,6 +726,24 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
   int _currentPage = 0;
   Timer? _autoPlayTimer;
   bool _isPlaying = false;
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Preload every step image up front so switching between them (via
+    // swipe, buttons, or auto-play) always finds the image already
+    // decoded and in cache. Without this, Image.network still has to
+    // fetch over the network on first display, so by the time it's
+    // actually ready to paint the fade-in animation has already finished
+    // and the image just pops in instead of fading.
+    if (!_precached) {
+      _precached = true;
+      for (final img in widget.images) {
+        precacheImage(NetworkImage(img.imageUrl), context);
+      }
+    }
+  }
 
   @override
   void dispose() {
