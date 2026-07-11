@@ -851,6 +851,16 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
                       current.imageUrl,
                       key: ValueKey(_currentPage),
                       fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                          ),
+                        );
+                      },
                       errorBuilder: (_, __, ___) => const Center(
                         child: Icon(Icons.image_not_supported, color: Colors.grey),
                       ),
