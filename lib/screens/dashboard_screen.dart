@@ -790,8 +790,20 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
       _stopAutoPlay();
       return;
     }
-    setState(() => _isPlaying = true);
-    _autoPlayTimer = Timer.periodic(const Duration(seconds: 2), (_) => _advance(1));
+    setState(() {
+      _isPlaying = true;
+      // Restart from the beginning if Play is pressed while already on
+      // the last frame, so there's something to actually play through.
+      if (_currentPage >= widget.images.length - 1) _currentPage = 0;
+    });
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      // Play through once and stop on the last frame instead of looping.
+      if (_currentPage >= widget.images.length - 1) {
+        _stopAutoPlay();
+        return;
+      }
+      _advance(1);
+    });
   }
 
   void _advance(int delta) {
