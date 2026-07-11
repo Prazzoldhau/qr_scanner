@@ -723,19 +723,13 @@ class _ExerciseImageCarousel extends StatefulWidget {
 }
 
 class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
-  final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _autoPlayTimer;
   bool _isPlaying = false;
-  // Distinguishes a page change caused by our own auto-play/button
-  // animateToPage call from one caused by the user swiping directly,
-  // so a manual swipe stops auto-play but our own advance doesn't.
-  bool _isProgrammaticChange = false;
 
   @override
   void dispose() {
     _autoPlayTimer?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -754,18 +748,13 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 2), (_) => _advance(1));
   }
 
-  Future<void> _advance(int delta) async {
-    _isProgrammaticChange = true;
-    final next = (_currentPage + delta + widget.images.length) % widget.images.length;
-    await _pageController.animateToPage(
-      next,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-    _isProgrammaticChange = false;
+  void _advance(int delta) {
+    setState(() {
+      _currentPage = (_currentPage + delta + widget.images.length) % widget.images.length;
+    });
   }
 
-  void _onNavButtonTap(int delta) {
+  void _onManualNavigate(int delta) {
     _stopAutoPlay();
     _advance(delta);
   }
@@ -787,21 +776,26 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
               fit: StackFit.expand,
               children: [
                 Container(color: Colors.grey[900]),
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: images.length,
-                  onPageChanged: (index) {
-                    setState(() => _currentPage = index);
-                    // A page change we didn't trigger ourselves means the
-                    // patient swiped manually - stop any running auto-play
-                    // rather than fighting their navigation.
-                    if (!_isProgrammaticChange) _stopAutoPlay();
+                GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity < -200) {
+                      _onManualNavigate(1); // swiped left -> next
+                    } else if (velocity > 200) {
+                      _onManualNavigate(-1); // swiped right -> previous
+                    }
                   },
-                  itemBuilder: (context, index) => Image.network(
-                    images[index].imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Center(
-                      child: Icon(Icons.image_not_supported, color: Colors.grey),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: Image.network(
+                      current.imageUrl,
+                      key: ValueKey(_currentPage),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(Icons.image_not_supported, color: Colors.grey),
+                      ),
                     ),
                   ),
                 ),
@@ -810,7 +804,7 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
                   top: 0,
                   bottom: 0,
                   child: Center(
-                    child: _carouselButton(Icons.chevron_left, () => _onNavButtonTap(-1)),
+                    child: _carouselButton(Icons.chevron_left, () => _onManualNavigate(-1)),
                   ),
                 ),
                 Positioned(
@@ -818,7 +812,7 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
                   top: 0,
                   bottom: 0,
                   child: Center(
-                    child: _carouselButton(Icons.chevron_right, () => _onNavButtonTap(1)),
+                    child: _carouselButton(Icons.chevron_right, () => _onManualNavigate(1)),
                   ),
                 ),
                 Positioned(
