@@ -1,4 +1,5 @@
 // lib/screens/dashboard_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
@@ -8,6 +9,22 @@ import 'marketplace_screen.dart';
 import 'physio_contact_screen.dart';
 
 // --- Models ---
+class StepImage {
+  final int order;
+  final String imageUrl;
+  final String? label;
+
+  StepImage({required this.order, required this.imageUrl, this.label});
+
+  factory StepImage.fromJson(Map<String, dynamic> json) {
+    return StepImage(
+      order: json['order'] ?? 0,
+      imageUrl: json['image_url'] ?? '',
+      label: json['label'],
+    );
+  }
+}
+
 class Exercise {
   final int id;
   final String exerciseName;
@@ -20,6 +37,7 @@ class Exercise {
   final bool scheduleDay;
   final bool scheduleEvening;
   final bool isCompleted;
+  final List<StepImage> stepImages;
 
   Exercise({
     required this.id,
@@ -33,6 +51,7 @@ class Exercise {
     required this.scheduleDay,
     required this.scheduleEvening,
     required this.isCompleted,
+    required this.stepImages,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -48,6 +67,10 @@ class Exercise {
       scheduleDay: json['schedule_day'] ?? false,
       scheduleEvening: json['schedule_evening'] ?? false,
       isCompleted: json['is_completed'] ?? false,
+      stepImages: ((json['step_images'] as List<dynamic>? ?? [])
+              .map((e) => StepImage.fromJson(e))
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order))),
     );
   }
 }
@@ -362,24 +385,27 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              width: double.infinity,
-              height: thumbnailHeight,
-              color: Colors.grey[900],
-              child: exercise.exerciseUrl != null
-                  ? Image.network(
-                      exercise.exerciseUrl!,
-                      width: double.infinity,
-                      height: thumbnailHeight,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => _noImage(thumbnailHeight),
-                    )
-                  : _noImage(thumbnailHeight),
+          // Thumbnail, or step-by-step slideshow if the physio attached one
+          if (exercise.stepImages.isNotEmpty)
+            _ExerciseImageCarousel(images: exercise.stepImages, height: thumbnailHeight)
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: double.infinity,
+                height: thumbnailHeight,
+                color: Colors.grey[900],
+                child: exercise.exerciseUrl != null
+                    ? Image.network(
+                        exercise.exerciseUrl!,
+                        width: double.infinity,
+                        height: thumbnailHeight,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => _noImage(thumbnailHeight),
+                      )
+                    : _noImage(thumbnailHeight),
+              ),
             ),
-          ),
           const SizedBox(height: 8),
 
           // Title
@@ -678,6 +704,180 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// EXERCISE STEP IMAGE CAROUSEL – slideshow of a physio's step-by-step photos
+// ---------------------------------------------------------------------------
+class _ExerciseImageCarousel extends StatefulWidget {
+  final List<StepImage> images;
+  final double height;
+
+  const _ExerciseImageCarousel({required this.images, required this.height});
+
+  @override
+  State<_ExerciseImageCarousel> createState() => _ExerciseImageCarouselState();
+}
+
+class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  Timer? _autoPlayTimer;
+  bool _isPlaying = false;
+  // Distinguishes a page change caused by our own auto-play/button
+  // animateToPage call from one caused by the user swiping directly,
+  // so a manual swipe stops auto-play but our own advance doesn't.
+  bool _isProgrammaticChange = false;
+
+  @override
+  void dispose() {
+    _autoPlayTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _stopAutoPlay() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = null;
+    if (_isPlaying) setState(() => _isPlaying = false);
+  }
+
+  void _togglePlay() {
+    if (_isPlaying) {
+      _stopAutoPlay();
+      return;
+    }
+    setState(() => _isPlaying = true);
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 2), (_) => _advance(1));
+  }
+
+  Future<void> _advance(int delta) async {
+    _isProgrammaticChange = true;
+    final next = (_currentPage + delta + widget.images.length) % widget.images.length;
+    await _pageController.animateToPage(
+      next,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+    _isProgrammaticChange = false;
+  }
+
+  void _onNavButtonTap(int delta) {
+    _stopAutoPlay();
+    _advance(delta);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = widget.images;
+    final current = images[_currentPage];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: double.infinity,
+            height: widget.height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(color: Colors.grey[900]),
+                PageView.builder(
+                  controller: _pageController,
+                  itemCount: images.length,
+                  onPageChanged: (index) {
+                    setState(() => _currentPage = index);
+                    // A page change we didn't trigger ourselves means the
+                    // patient swiped manually - stop any running auto-play
+                    // rather than fighting their navigation.
+                    if (!_isProgrammaticChange) _stopAutoPlay();
+                  },
+                  itemBuilder: (context, index) => Image.network(
+                    images[index].imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Center(
+                      child: Icon(Icons.image_not_supported, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 6,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: _carouselButton(Icons.chevron_left, () => _onNavButtonTap(-1)),
+                  ),
+                ),
+                Positioned(
+                  right: 6,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: _carouselButton(Icons.chevron_right, () => _onNavButtonTap(1)),
+                  ),
+                ),
+                Positioned(
+                  right: 6,
+                  bottom: 6,
+                  child: _carouselButton(
+                    _isPlaying ? Icons.pause : Icons.play_arrow,
+                    _togglePlay,
+                    small: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        // Dot indicator + step label
+        Row(
+          children: [
+            ...List.generate(images.length, (i) {
+              final isActive = i == _currentPage;
+              return Container(
+                margin: const EdgeInsets.only(right: 4),
+                width: isActive ? 8 : 6,
+                height: isActive ? 8 : 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive ? Colors.greenAccent : Colors.grey[700],
+                ),
+              );
+            }),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Step ${_currentPage + 1} of ${images.length}'
+                '${(current.label != null && current.label!.trim().isNotEmpty) ? ' — ${current.label}' : ''}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _carouselButton(IconData icon, VoidCallback onTap, {bool small = false}) {
+    final size = small ? 30.0 : 36.0;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.45),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: small ? 18 : 22),
       ),
     );
   }
