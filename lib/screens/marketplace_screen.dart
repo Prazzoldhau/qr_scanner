@@ -4,7 +4,18 @@ import 'cart_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   final Map<String, dynamic> patientData;
-  const MarketplaceScreen({super.key, required this.patientData});
+  final String title;
+  // If set, the screen opens locked to this category (matched by name) and
+  // hides the category chip row - used by the Pharmacy quick action to
+  // reuse this same screen/API instead of a separate implementation.
+  final String? lockedCategoryName;
+
+  const MarketplaceScreen({
+    super.key,
+    required this.patientData,
+    this.title = 'Marketplace',
+    this.lockedCategoryName,
+  });
 
   @override
   State<MarketplaceScreen> createState() => _MarketplaceScreenState();
@@ -34,15 +45,27 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     setState(() => _loading = true);
     try {
       final api = ApiService();
+      final categories = await api.getCategories();
+
+      int? initialCategory;
+      if (widget.lockedCategoryName != null) {
+        for (final c in categories) {
+          if ((c['name'] as String?)?.toLowerCase() == widget.lockedCategoryName!.toLowerCase()) {
+            initialCategory = c['id'];
+            break;
+          }
+        }
+      }
+
       final results = await Future.wait([
-        api.getCategories(),
-        api.getProducts(categoryId: _selectedCategory),
+        api.getProducts(categoryId: initialCategory),
         api.getCart(),
       ]);
       setState(() {
-        _categories = results[0] as List<Map<String, dynamic>>;
-        _products = results[1] as List<Map<String, dynamic>>;
-        final cart = results[2] as Map<String, dynamic>;
+        _categories = categories;
+        _selectedCategory = initialCategory;
+        _products = results[0] as List<Map<String, dynamic>>;
+        final cart = results[1] as Map<String, dynamic>;
         _cartCount = cart['count'] ?? 0;
         _loading = false;
       });
@@ -86,7 +109,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Marketplace', style: TextStyle(color: Colors.white)),
+        title: Text(widget.title, style: const TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           Stack(
@@ -124,7 +147,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     controller: _searchController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: 'Search products...',
+                      hintText: widget.lockedCategoryName != null
+                          ? 'Search ${widget.lockedCategoryName!.toLowerCase()}...'
+                          : 'Search products...',
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       filled: true,
                       fillColor: Colors.grey[900],
@@ -145,20 +170,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     onChanged: (v) { if (v.isEmpty) _loadProducts(); setState(() {}); },
                   ),
                 ),
-                // Category chips
-                SizedBox(
-                  height: 42,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: _categories.length + 1,
-                    itemBuilder: (context, i) {
-                      if (i == 0) return _catChip(null, 'All');
-                      final c = _categories[i - 1];
-                      return _catChip(c['id'], '${c['icon']}  ${c['name']}');
-                    },
+                // Category chips - hidden when locked to a single category
+                if (widget.lockedCategoryName == null)
+                  SizedBox(
+                    height: 42,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: _categories.length + 1,
+                      itemBuilder: (context, i) {
+                        if (i == 0) return _catChip(null, 'All');
+                        final c = _categories[i - 1];
+                        return _catChip(c['id'], '${c['icon']}  ${c['name']}');
+                      },
+                    ),
                   ),
-                ),
                 // Product grid
                 Expanded(
                   child: _products.isEmpty

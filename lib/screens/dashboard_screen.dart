@@ -176,8 +176,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         icon: Icons.local_pharmacy_outlined,
                         label: 'Pharmacy',
                         color: const Color(0xFF16A085),
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Pharmacy is coming soon!')),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MarketplaceScreen(
+                              patientData: widget.patientData,
+                              title: 'Pharmacy',
+                              lockedCategoryName: 'Pharmacy',
+                            ),
+                          ),
                         ),
                       ),
                     ),
