@@ -168,6 +168,14 @@ class ApiService {
     return List<Map<String, dynamic>>.from(d['products']);
   }
 
+  Future<List<Map<String, dynamic>>> getPharmacyProducts({String? search}) async {
+    final params = <String, dynamic>{};
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    final r = await _dio.get('/api/pharmacy/products/', queryParameters: params);
+    final d = jsonDecode(r.data as String);
+    return List<Map<String, dynamic>>.from(d['products']);
+  }
+
   Future<Map<String, dynamic>> getCart() async {
     final r = await _dio.get('/api/cart/');
     return jsonDecode(r.data as String) as Map<String, dynamic>;

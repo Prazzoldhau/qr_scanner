@@ -182,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             builder: (_) => MarketplaceScreen(
                               patientData: widget.patientData,
                               title: 'Pharmacy',
-                              lockedCategoryName: 'Pharmacy',
+                              isPharmacy: true,
                             ),
                           ),
                         ),

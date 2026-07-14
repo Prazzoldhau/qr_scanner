@@ -5,16 +5,17 @@ import 'cart_screen.dart';
 class MarketplaceScreen extends StatefulWidget {
   final Map<String, dynamic> patientData;
   final String title;
-  // If set, the screen opens locked to this category (matched by name) and
-  // hides the category chip row - used by the Pharmacy quick action to
-  // reuse this same screen/API instead of a separate implementation.
-  final String? lockedCategoryName;
+  // Pharmacy is a separate section on the backend (dedicated endpoint,
+  // excluded from the regular Marketplace listing) rather than just another
+  // category - this reuses the same screen/cart flow with the right API
+  // calls instead of a separate implementation.
+  final bool isPharmacy;
 
   const MarketplaceScreen({
     super.key,
     required this.patientData,
     this.title = 'Marketplace',
-    this.lockedCategoryName,
+    this.isPharmacy = false,
   });
 
   @override
@@ -45,27 +46,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     setState(() => _loading = true);
     try {
       final api = ApiService();
-      final categories = await api.getCategories();
-
-      int? initialCategory;
-      if (widget.lockedCategoryName != null) {
-        for (final c in categories) {
-          if ((c['name'] as String?)?.toLowerCase() == widget.lockedCategoryName!.toLowerCase()) {
-            initialCategory = c['id'];
-            break;
-          }
-        }
-      }
-
       final results = await Future.wait([
-        api.getProducts(categoryId: initialCategory),
+        widget.isPharmacy ? api.getPharmacyProducts() : api.getProducts(),
+        widget.isPharmacy ? Future.value(<Map<String, dynamic>>[]) : api.getCategories(),
         api.getCart(),
       ]);
       setState(() {
-        _categories = categories;
-        _selectedCategory = initialCategory;
         _products = results[0] as List<Map<String, dynamic>>;
-        final cart = results[1] as Map<String, dynamic>;
+        _categories = results[1] as List<Map<String, dynamic>>;
+        final cart = results[2] as Map<String, dynamic>;
         _cartCount = cart['count'] ?? 0;
         _loading = false;
       });
@@ -75,10 +64,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Future<void> _loadProducts() async {
-    final prods = await ApiService().getProducts(
-      categoryId: _selectedCategory,
-      search: _searchController.text.trim(),
-    );
+    final prods = widget.isPharmacy
+        ? await ApiService().getPharmacyProducts(search: _searchController.text.trim())
+        : await ApiService().getProducts(
+            categoryId: _selectedCategory,
+            search: _searchController.text.trim(),
+          );
     setState(() => _products = prods);
   }
 
@@ -147,9 +138,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     controller: _searchController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: widget.lockedCategoryName != null
-                          ? 'Search ${widget.lockedCategoryName!.toLowerCase()}...'
-                          : 'Search products...',
+                      hintText: widget.isPharmacy ? 'Search medicines...' : 'Search products...',
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       filled: true,
                       fillColor: Colors.grey[900],
@@ -170,8 +159,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     onChanged: (v) { if (v.isEmpty) _loadProducts(); setState(() {}); },
                   ),
                 ),
-                // Category chips - hidden when locked to a single category
-                if (widget.lockedCategoryName == null)
+                // Category chips - Pharmacy has no sub-categories to filter by
+                if (!widget.isPharmacy)
                   SizedBox(
                     height: 42,
                     child: ListView.builder(
