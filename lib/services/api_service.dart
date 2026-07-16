@@ -120,6 +120,32 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> activate(String code) async {
+    try {
+      final response = await _dio.post(
+        '/api/activate/',
+        data: {'code': code},
+      );
+      final rawBody = response.data as String;
+      final parsed = jsonDecode(rawBody);
+      if (parsed is Map<String, dynamic>) return parsed;
+      throw Exception('Unexpected response format');
+    } on DioException catch (e) {
+      if (e.response != null) {
+        String message = 'Activation failed (${e.response?.statusCode})';
+        try {
+          final body = e.response?.data;
+          final parsedError = body is String ? jsonDecode(body) : body;
+          if (parsedError is Map && parsedError['error'] != null) {
+            message = parsedError['error'].toString();
+          }
+        } catch (_) {}
+        throw Exception(message);
+      }
+      throw Exception('Network error: ${e.message}');
+    }
+  }
+
   Future<void> submitFeedback(int exerciseId, String feedbackType, String note) async {
     try {
       final response = await _dio.post(

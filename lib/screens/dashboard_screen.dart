@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 import '../widgets/custom_card.dart';
+import 'activation_scanner_screen.dart';
 import 'login_screen.dart';
 import 'marketplace_screen.dart';
 import 'physio_contact_screen.dart';
@@ -116,6 +117,18 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  late bool _isActive;
+
+  @override
+  void initState() {
+    super.initState();
+    _isActive = widget.patientData['activation_active'] == true;
+  }
+
+  void _onActivated(Map<String, dynamic> result) {
+    setState(() => _isActive = result['activation_active'] == true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final patientName = widget.patientData['patient_name'] ?? 'Patient';
@@ -141,7 +154,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Container(
         color: Colors.black,
-        child: SafeArea(
+        child: !_isActive
+            ? _ActivationGate(onActivated: _onActivated)
+            : SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: ListView(
@@ -342,6 +357,152 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ACTIVATION GATE – shown instead of the dashboard when the patient's
+// access has expired; redeems a recharge-card-style code (scanned or typed).
+// ---------------------------------------------------------------------------
+class _ActivationGate extends StatefulWidget {
+  final ValueChanged<Map<String, dynamic>> onActivated;
+  const _ActivationGate({required this.onActivated});
+
+  @override
+  State<_ActivationGate> createState() => _ActivationGateState();
+}
+
+class _ActivationGateState extends State<_ActivationGate> {
+  final _codeController = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+  }
+
+  Future<void> _submitCode(String code) async {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty || _isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final result = await ApiService().activate(trimmed);
+      if (result['success'] == true) {
+        widget.onActivated(result);
+      } else {
+        _showError(result['error']?.toString() ?? 'Activation failed');
+      }
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _scanCode() async {
+    final scanned = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ActivationScannerScreen()),
+    );
+    if (scanned != null) {
+      _codeController.text = scanned;
+      _submitCode(scanned);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, color: Colors.greenAccent, size: 56),
+            const SizedBox(height: 16),
+            const Text(
+              'Activation Required',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Your access has expired. Scan or enter an activation code to continue.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: _isSubmitting ? null : _scanCode,
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Scan Activation Code'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.greenAccent,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(child: Divider(color: Colors.grey[800])),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('or', style: TextStyle(color: Colors.grey[600])),
+                ),
+                Expanded(child: Divider(color: Colors.grey[800])),
+              ],
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _codeController,
+              textCapitalization: TextCapitalization.characters,
+              enabled: !_isSubmitting,
+              style: const TextStyle(color: Colors.white, letterSpacing: 1.5),
+              decoration: InputDecoration(
+                hintText: 'A3F7-K9P2-XQ4M',
+                hintStyle: TextStyle(color: Colors.grey[600]),
+                filled: true,
+                fillColor: Colors.grey[900],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              ),
+              onSubmitted: _submitCode,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : () => _submitCode(_codeController.text),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0A6EBD),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Activate', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
