@@ -173,7 +173,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithPop: (didPop, result) {
+      onPopInvoked: (didPop) {
         if (didPop) return;
         _handleBackPress();
       },
