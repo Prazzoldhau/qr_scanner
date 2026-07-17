@@ -59,9 +59,6 @@ class Exercise {
     required this.descriptionNepali,
   });
 
-  // Nepali is the patient-facing language when set; English is the fallback.
-  String get displayDescription => descriptionNepali.trim().isNotEmpty ? descriptionNepali : description;
-
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
       id: json['id'] ?? 0,
@@ -535,6 +532,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   bool _isSubmitting = false;
   bool _isQuickSubmitting = false;
   bool _showSteps = false;
+  bool _showEnglishDescription = false; // false = Nepali-preferred default
   final TextEditingController _noteController = TextEditingController();
 
   @override
@@ -582,7 +580,12 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   }
 
   Widget _buildStepsPanel() {
-    final description = widget.exercise.displayDescription.trim();
+    final exercise = widget.exercise;
+    final hasNepali = exercise.descriptionNepali.trim().isNotEmpty;
+    final hasEnglish = exercise.description.trim().isNotEmpty;
+    final showEnglish = _showEnglishDescription || !hasNepali;
+    final description = (showEnglish ? exercise.description : exercise.descriptionNepali).trim();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -591,13 +594,35 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[800]!),
       ),
-      child: Text(
-        description.isNotEmpty ? description : 'No instructions added for this exercise yet.',
-        style: TextStyle(
-          color: description.isNotEmpty ? Colors.white70 : Colors.grey[600],
-          fontSize: 13,
-          height: 1.4,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasNepali && hasEnglish)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _showEnglishDescription = !_showEnglishDescription),
+                icon: const Icon(Icons.translate, size: 15),
+                label: Text(showEnglish ? 'नेपालीमा हेर्नुहोस्' : 'View in English'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blueAccent,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+          if (hasNepali && hasEnglish) const SizedBox(height: 8),
+          Text(
+            description.isNotEmpty ? description : 'No instructions added for this exercise yet.',
+            style: TextStyle(
+              color: description.isNotEmpty ? Colors.white70 : Colors.grey[600],
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }
