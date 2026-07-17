@@ -40,6 +40,7 @@ class Exercise {
   final bool isCompleted;
   final List<StepImage> stepImages;
   final String description;
+  final String descriptionNepali;
 
   Exercise({
     required this.id,
@@ -55,7 +56,11 @@ class Exercise {
     required this.isCompleted,
     required this.stepImages,
     required this.description,
+    required this.descriptionNepali,
   });
+
+  // Nepali is the patient-facing language when set; English is the fallback.
+  String get displayDescription => descriptionNepali.trim().isNotEmpty ? descriptionNepali : description;
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
@@ -75,6 +80,7 @@ class Exercise {
               .toList()
             ..sort((a, b) => a.order.compareTo(b.order))),
       description: json['description'] ?? '',
+      descriptionNepali: json['description_nepali'] ?? '',
     );
   }
 }
@@ -571,7 +577,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   }
 
   void _showDescription() {
-    final description = widget.exercise.description.trim();
+    final description = widget.exercise.displayDescription.trim();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
