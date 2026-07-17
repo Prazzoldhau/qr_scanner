@@ -39,6 +39,7 @@ class Exercise {
   final bool scheduleEvening;
   final bool isCompleted;
   final List<StepImage> stepImages;
+  final String description;
 
   Exercise({
     required this.id,
@@ -53,6 +54,7 @@ class Exercise {
     required this.scheduleEvening,
     required this.isCompleted,
     required this.stepImages,
+    required this.description,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -72,6 +74,7 @@ class Exercise {
               .map((e) => StepImage.fromJson(e))
               .toList()
             ..sort((a, b) => a.order.compareTo(b.order))),
+      description: json['description'] ?? '',
     );
   }
 }
@@ -567,6 +570,43 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     }
   }
 
+  void _showDescription() {
+    final description = widget.exercise.description.trim();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.exercise.exerciseName,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  description.isNotEmpty ? description : 'No instructions added for this exercise yet.',
+                  style: TextStyle(
+                    color: description.isNotEmpty ? Colors.white70 : Colors.grey[600],
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _submit() async {
     if (_selectedFeedback == null) return;
     setState(() => _isSubmitting = true);
@@ -745,6 +785,17 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               textStyle: const TextStyle(fontSize: 13),
             ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: _showDescription,
+          tooltip: 'Steps',
+          icon: const Icon(Icons.list_alt, size: 20),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.blueAccent.withOpacity(0.15),
+            foregroundColor: Colors.blueAccent,
+            shape: const CircleBorder(),
           ),
         ),
         const SizedBox(width: 8),
