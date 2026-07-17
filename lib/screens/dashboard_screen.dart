@@ -1,6 +1,7 @@
 // lib/screens/dashboard_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/api_service.dart';
 import '../widgets/custom_card.dart';
@@ -124,6 +125,10 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late bool _isActive;
+  DateTime? _lastBackPress;
+  // Shared across all exercise cards so opening one card's Comment/Steps
+  // panel collapses whichever other card had one open - only one at a time.
+  final ValueNotifier<int?> _expandedExerciseId = ValueNotifier(null);
 
   @override
   void initState() {
@@ -131,8 +136,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _isActive = widget.patientData['activation_active'] == true;
   }
 
+  @override
+  void dispose() {
+    _expandedExerciseId.dispose();
+    super.dispose();
+  }
+
   void _onActivated(Map<String, dynamic> result) {
     setState(() => _isActive = result['activation_active'] == true);
+  }
+
+  // Dashboard is the navigation root after login (reached via
+  // pushReplacement), so a stray back press here would otherwise exit the
+  // app immediately with no confirmation.
+  Future<void> _handleBackPress() async {
+    final now = DateTime.now();
+    if (_lastBackPress == null || now.difference(_lastBackPress!) > const Duration(seconds: 2)) {
+      _lastBackPress = now;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Press back again to exit'), duration: Duration(seconds: 2)),
+      );
+      return;
+    }
+    SystemNavigator.pop();
   }
 
   @override
@@ -145,92 +171,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? Prescription.fromJson(rawPrescription)
         : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(patientName, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white70, size: 20),
-            onPressed: () => _confirmLogout(context),
-          ),
-        ],
-      ),
-      body: Container(
-        color: Colors.black,
-        child: !_isActive
-            ? _ActivationGate(onActivated: _onActivated)
-            : SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: ListView(
-              children: [
-                // Quick action row
-                Row(
-                  children: [
-                    Expanded(
-                      child: _quickAction(
-                        icon: Icons.storefront_outlined,
-                        label: 'Marketplace',
-                        color: const Color(0xFF0A6EBD),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => MarketplaceScreen(patientData: widget.patientData)),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithPop: (didPop, result) {
+        if (didPop) return;
+        _handleBackPress();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(patientName, style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.black,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white70, size: 20),
+              onPressed: () => _confirmLogout(context),
+            ),
+          ],
+        ),
+        body: Container(
+          color: Colors.black,
+          child: !_isActive
+              ? _ActivationGate(onActivated: _onActivated)
+              : SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: ListView(
+                children: [
+                  // Quick action row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _quickAction(
+                          icon: Icons.storefront_outlined,
+                          label: 'Marketplace',
+                          color: const Color(0xFF0A6EBD),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => MarketplaceScreen(patientData: widget.patientData)),
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: _quickAction(
-                        icon: Icons.person_pin_outlined,
-                        label: 'My Physio',
-                        color: const Color(0xFF6C63FF),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PhysioContactScreen()),
+                      Expanded(
+                        child: _quickAction(
+                          icon: Icons.person_pin_outlined,
+                          label: 'My Physio',
+                          color: const Color(0xFF6C63FF),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PhysioContactScreen()),
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: _quickAction(
-                        icon: Icons.local_pharmacy_outlined,
-                        label: 'Pharmacy',
-                        color: const Color(0xFF16A085),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MarketplaceScreen(
-                              patientData: widget.patientData,
-                              title: 'Pharmacy',
-                              isPharmacy: true,
+                      Expanded(
+                        child: _quickAction(
+                          icon: Icons.local_pharmacy_outlined,
+                          label: 'Pharmacy',
+                          color: const Color(0xFF16A085),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MarketplaceScreen(
+                                patientData: widget.patientData,
+                                title: 'Pharmacy',
+                                isPharmacy: true,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Exercise section header
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'Exercise Prescriptions',
-                    style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                    ],
                   ),
-                ),
-                if (prescription == null)
-                  _buildEmptyState()
-                else ...[
-                  _buildExerciseFeed(prescription.exercises),
-                  if (prescription.notes != null && prescription.notes!.trim().isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: _buildNotesCard(prescription.notes!),
+                  const SizedBox(height: 16),
+                  // Exercise section header
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Exercise Prescriptions',
+                      style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5),
                     ),
+                  ),
+                  if (prescription == null)
+                    _buildEmptyState()
+                  else ...[
+                    _buildExerciseFeed(prescription.exercises),
+                    if (prescription.notes != null && prescription.notes!.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: _buildNotesCard(prescription.notes!),
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -342,7 +375,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: exercises.length,
       padding: const EdgeInsets.symmetric(vertical: 4),
-      itemBuilder: (context, index) => _ExerciseFeedItem(exercise: exercises[index]),
+      itemBuilder: (context, index) => _ExerciseFeedItem(
+        exercise: exercises[index],
+        expandedExerciseId: _expandedExerciseId,
+      ),
     );
   }
 
@@ -519,7 +555,8 @@ class _ActivationGateState extends State<_ActivationGate> {
 // ---------------------------------------------------------------------------
 class _ExerciseFeedItem extends StatefulWidget {
   final Exercise exercise;
-  const _ExerciseFeedItem({super.key, required this.exercise});
+  final ValueNotifier<int?> expandedExerciseId;
+  const _ExerciseFeedItem({super.key, required this.exercise, required this.expandedExerciseId});
 
   @override
   State<_ExerciseFeedItem> createState() => _ExerciseFeedItemState();
@@ -543,12 +580,35 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
       _isSubmitted = true;
       _selectedFeedback = 'normal';
     }
+    widget.expandedExerciseId.addListener(_onOtherCardExpanded);
   }
 
   @override
   void dispose() {
+    widget.expandedExerciseId.removeListener(_onOtherCardExpanded);
     _noteController.dispose();
     super.dispose();
+  }
+
+  // Another card's Comment/Steps panel just opened - collapse this card's
+  // panel(s) too, unless this card is the one that just opened, or is
+  // already permanently submitted (that state isn't a "panel", keep it).
+  void _onOtherCardExpanded() {
+    if (widget.expandedExerciseId.value == widget.exercise.id) return;
+    if ((_isDone && !_isSubmitted) || _showSteps) {
+      setState(() {
+        if (_isDone && !_isSubmitted) {
+          _isDone = false;
+          _selectedFeedback = null;
+          _noteController.clear();
+        }
+        _showSteps = false;
+      });
+    }
+  }
+
+  void _claimExpanded() {
+    widget.expandedExerciseId.value = widget.exercise.id;
   }
 
   // Quick tick: mark done instantly with default 'normal' feedback,
@@ -576,7 +636,9 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   }
 
   void _toggleSteps() {
-    setState(() => _showSteps = !_showSteps);
+    final opening = !_showSteps;
+    setState(() => _showSteps = opening);
+    if (opening) _claimExpanded();
   }
 
   Widget _buildStepsPanel() {
@@ -803,7 +865,12 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: _isQuickSubmitting ? null : () => setState(() => _isDone = true),
+            onPressed: _isQuickSubmitting
+                ? null
+                : () {
+                    setState(() => _isDone = true);
+                    _claimExpanded();
+                  },
             icon: const Icon(Icons.comment_outlined, size: 18),
             label: const Text('Comment'),
             style: OutlinedButton.styleFrom(
@@ -847,6 +914,14 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     );
   }
 
+  void _closeFeedbackPanel() {
+    setState(() {
+      _isDone = false;
+      _selectedFeedback = null;
+      _noteController.clear();
+    });
+  }
+
   Widget _buildFeedbackPanel() {
     if (_isSubmitted) {
       return const Row(
@@ -873,13 +948,22 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'How did it feel?',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'How did it feel?',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              GestureDetector(
+                onTap: _closeFeedbackPanel,
+                child: Icon(Icons.close, size: 18, color: Colors.grey[500]),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
 
@@ -953,11 +1037,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
               ),
               const SizedBox(width: 12),
               TextButton(
-                onPressed: () => setState(() {
-                  _isDone = false;
-                  _selectedFeedback = null;
-                  _noteController.clear();
-                }),
+                onPressed: _closeFeedbackPanel,
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                   minimumSize: Size.zero,
