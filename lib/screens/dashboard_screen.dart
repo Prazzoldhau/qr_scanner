@@ -534,6 +534,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   bool _isSubmitted = false;
   bool _isSubmitting = false;
   bool _isQuickSubmitting = false;
+  bool _showSteps = false;
   final TextEditingController _noteController = TextEditingController();
 
   @override
@@ -576,40 +577,28 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     }
   }
 
-  void _showDescription() {
+  void _toggleSteps() {
+    setState(() => _showSteps = !_showSteps);
+  }
+
+  Widget _buildStepsPanel() {
     final description = widget.exercise.displayDescription.trim();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.exercise.exerciseName,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  description.isNotEmpty ? description : 'No instructions added for this exercise yet.',
-                  style: TextStyle(
-                    color: description.isNotEmpty ? Colors.white70 : Colors.grey[600],
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      child: Text(
+        description.isNotEmpty ? description : 'No instructions added for this exercise yet.',
+        style: TextStyle(
+          color: description.isNotEmpty ? Colors.white70 : Colors.grey[600],
+          fontSize: 13,
+          height: 1.4,
+        ),
+      ),
     );
   }
 
@@ -716,6 +705,14 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             child: _isDone ? _buildFeedbackPanel() : _buildActionRow(),
           ),
 
+          if (_showSteps) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _buildStepsPanel(),
+            ),
+          ],
+
           const SizedBox(height: 8),
           Divider(color: Colors.grey[850], thickness: 1),
         ],
@@ -795,11 +792,11 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
         ),
         const SizedBox(width: 8),
         IconButton(
-          onPressed: _showDescription,
+          onPressed: _toggleSteps,
           tooltip: 'Steps',
-          icon: const Icon(Icons.list_alt, size: 20),
+          icon: Icon(_showSteps ? Icons.list_alt : Icons.list_alt_outlined, size: 20),
           style: IconButton.styleFrom(
-            backgroundColor: Colors.blueAccent.withOpacity(0.15),
+            backgroundColor: Colors.blueAccent.withOpacity(_showSteps ? 0.3 : 0.15),
             foregroundColor: Colors.blueAccent,
             shape: const CircleBorder(),
           ),
