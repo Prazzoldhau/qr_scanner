@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/api_service.dart';
 import '../widgets/custom_card.dart';
@@ -31,6 +32,7 @@ class Exercise {
   final int id;
   final String exerciseName;
   final String? exerciseUrl;
+  final String? youtubeUrl;
   final int sets;
   final int reps;
   final int holdTimeSec;
@@ -47,6 +49,7 @@ class Exercise {
     required this.id,
     required this.exerciseName,
     this.exerciseUrl,
+    this.youtubeUrl,
     required this.sets,
     required this.reps,
     required this.holdTimeSec,
@@ -65,6 +68,7 @@ class Exercise {
       id: json['id'] ?? 0,
       exerciseName: json['exercise_name'] ?? 'Unnamed exercise',
       exerciseUrl: json['exercise_url'],
+      youtubeUrl: json['youtube_url'],
       sets: json['sets'] ?? 3,
       reps: json['reps'] ?? 10,
       holdTimeSec: json['hold_time_sec'] ?? 0,
@@ -860,6 +864,19 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     );
   }
 
+  Future<void> _openYoutubeVideo() async {
+    final url = widget.exercise.youtubeUrl;
+    if (url == null || url.trim().isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open video link')),
+        );
+      }
+    }
+  }
+
   Widget _buildActionRow() {
     return Row(
       children: [
@@ -893,6 +910,19 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             shape: const CircleBorder(),
           ),
         ),
+        if ((widget.exercise.youtubeUrl ?? '').trim().isNotEmpty) ...[
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: _openYoutubeVideo,
+            tooltip: 'Watch video',
+            icon: const Icon(Icons.play_circle_outline, size: 20),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.redAccent.withOpacity(0.15),
+              foregroundColor: Colors.redAccent,
+              shape: const CircleBorder(),
+            ),
+          ),
+        ],
         const SizedBox(width: 8),
         IconButton(
           onPressed: _isQuickSubmitting ? null : _quickMarkDone,
