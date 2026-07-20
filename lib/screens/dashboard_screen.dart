@@ -2,6 +2,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/api_service.dart';
@@ -138,6 +140,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _isActive = widget.patientData['activation_active'] == true;
+
+    // Warm the disk cache for every exercise image as soon as the
+    // prescription arrives, instead of waiting for each card to scroll
+    // into view. By the time the user reaches a card, its image(s) are
+    // already downloaded and just need decoding, not a network round trip.
+    final rawPrescription = widget.patientData['latest_prescription'];
+    if (rawPrescription != null) {
+      _prefetchExerciseImages(Prescription.fromJson(rawPrescription));
+    }
+  }
+
+  void _prefetchExerciseImages(Prescription prescription) {
+    final cacheManager = DefaultCacheManager();
+    for (final exercise in prescription.exercises) {
+      final urls = exercise.stepImages.isNotEmpty
+          ? exercise.stepImages.map((s) => s.imageUrl)
+          : [if (exercise.exerciseUrl != null) exercise.exerciseUrl!];
+      for (final url in urls) {
+        if (url.isEmpty) continue;
+        cacheManager.downloadFile(url).catchError((_) => null);
+      }
+    }
   }
 
   @override
@@ -737,12 +761,21 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
                 height: thumbnailHeight,
                 color: Colors.grey[900],
                 child: exercise.exerciseUrl != null
-                    ? Image.network(
-                        exercise.exerciseUrl!,
+                    ? CachedNetworkImage(
+                        imageUrl: exercise.exerciseUrl!,
                         width: double.infinity,
                         height: thumbnailHeight,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => _noImage(thumbnailHeight),
+                        memCacheWidth: (cardWidth * MediaQuery.of(context).devicePixelRatio).round(),
+                        fadeInDuration: const Duration(milliseconds: 150),
+                        placeholder: (_, __) => const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => _noImage(thumbnailHeight),
                       )
                     : _noImage(thumbnailHeight),
               ),
@@ -923,23 +956,6 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             ),
           ),
         ],
-        const SizedBox(width: 8),
-        IconButton(
-          onPressed: _isQuickSubmitting ? null : _quickMarkDone,
-          tooltip: 'Quick done (skip feedback)',
-          icon: _isQuickSubmitting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.greenAccent),
-                )
-              : const Icon(Icons.check, size: 20),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.greenAccent.withOpacity(0.15),
-            foregroundColor: Colors.greenAccent,
-            shape: const CircleBorder(),
-          ),
-        ),
       ],
     );
   }
@@ -1144,7 +1160,7 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
     if (!_precached) {
       _precached = true;
       for (final img in widget.images) {
-        precacheImage(NetworkImage(img.imageUrl), context);
+        precacheImage(CachedNetworkImageProvider(img.imageUrl), context);
       }
     }
   }
@@ -1223,21 +1239,23 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
                     duration: const Duration(milliseconds: 350),
                     transitionBuilder: (child, animation) =>
                         FadeTransition(opacity: animation, child: child),
-                    child: Image.network(
-                      current.imageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: current.imageUrl,
                       key: ValueKey(_currentPage),
                       fit: BoxFit.contain,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => const Center(
+                      memCacheWidth: (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round(),
+                      // The outer AnimatedSwitcher already cross-fades between
+                      // step images, so skip this widget's own fade-in to
+                      // avoid animating twice.
+                      fadeInDuration: Duration.zero,
+                      placeholder: (_, __) => const Center(
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) => const Center(
                         child: Icon(Icons.image_not_supported, color: Colors.grey),
                       ),
                     ),
