@@ -933,30 +933,51 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
           ),
         ),
         const SizedBox(width: 8),
-        IconButton(
+        _pillButton(
+          icon: _showSteps ? Icons.list_alt : Icons.list_alt_outlined,
+          label: 'Steps',
           onPressed: _toggleSteps,
-          tooltip: 'Steps',
-          icon: Icon(_showSteps ? Icons.list_alt : Icons.list_alt_outlined, size: 20),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.blueAccent.withOpacity(_showSteps ? 0.3 : 0.15),
-            foregroundColor: Colors.blueAccent,
-            shape: const CircleBorder(),
-          ),
+          color: Colors.blueAccent,
+          active: _showSteps,
         ),
         if ((widget.exercise.youtubeUrl ?? '').trim().isNotEmpty) ...[
           const SizedBox(width: 8),
-          IconButton(
+          _pillButton(
+            icon: Icons.play_circle_outline,
+            label: 'Video',
             onPressed: _openYoutubeVideo,
-            tooltip: 'Watch video',
-            icon: const Icon(Icons.play_circle_outline, size: 20),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.redAccent.withOpacity(0.15),
-              foregroundColor: Colors.redAccent,
-              shape: const CircleBorder(),
-            ),
+            color: Colors.redAccent,
           ),
         ],
       ],
+    );
+  }
+
+  Widget _pillButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+    required Color color,
+    bool active = false,
+  }) {
+    return Material(
+      color: color.withOpacity(active ? 0.3 : 0.15),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 4),
+              Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
