@@ -12,6 +12,7 @@ import 'activation_scanner_screen.dart';
 import 'login_screen.dart';
 import 'marketplace_screen.dart';
 import 'physio_contact_screen.dart';
+import 'services_screen.dart';
 
 // --- Models ---
 class StepImage {
@@ -254,18 +255,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       Expanded(
                         child: _quickAction(
-                          icon: Icons.local_pharmacy_outlined,
-                          label: 'Pharmacy',
+                          icon: Icons.health_and_safety_outlined,
+                          label: 'Services',
                           color: const Color(0xFF16A085),
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => MarketplaceScreen(
-                                patientData: widget.patientData,
-                                title: 'Pharmacy',
-                                isPharmacy: true,
-                              ),
-                            ),
+                            MaterialPageRoute(builder: (_) => const ServicesScreen()),
                           ),
                         ),
                       ),
