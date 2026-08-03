@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'physio_pairing_scanner_screen.dart';
 
 class PhysioContactScreen extends StatefulWidget {
   const PhysioContactScreen({super.key});
@@ -11,6 +12,7 @@ class PhysioContactScreen extends StatefulWidget {
 class _PhysioContactScreenState extends State<PhysioContactScreen> {
   Map<String, dynamic>? _physio;
   bool _loading = true;
+  bool _pairing = false;
 
   @override
   void initState() {
@@ -27,6 +29,36 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
     }
   }
 
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: isError ? Colors.redAccent : Colors.green),
+    );
+  }
+
+  Future<void> _scanAndPair() async {
+    final scanned = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const PhysioPairingScannerScreen()),
+    );
+    if (scanned == null || scanned.trim().isEmpty) return;
+
+    setState(() => _pairing = true);
+    try {
+      final result = await ApiService().pairWithPhysio(scanned.trim());
+      if (result['success'] == true) {
+        _showMessage('Connected to ${result['physio_name'] ?? 'your physio'}!');
+        await _load();
+      } else {
+        _showMessage(result['error']?.toString() ?? 'Pairing failed', isError: true);
+      }
+    } catch (e) {
+      _showMessage(e.toString(), isError: true);
+    } finally {
+      if (mounted) setState(() => _pairing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,7 +71,7 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _physio == null
-              ? const Center(child: Text('No physio assigned yet', style: TextStyle(color: Colors.grey)))
+              ? _noPhysioView()
               : Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -106,6 +138,49 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _noPhysioView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.person_search_outlined, color: Colors.grey, size: 56),
+            const SizedBox(height: 16),
+            const Text(
+              'No physio assigned yet',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Scan your physio\'s pairing QR code to connect with them.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: _pairing ? null : _scanAndPair,
+              icon: _pairing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.qr_code_scanner),
+              label: Text(_pairing ? 'Connecting...' : 'Scan Physio QR'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6C63FF),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
