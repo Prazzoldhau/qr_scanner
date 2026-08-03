@@ -82,24 +82,14 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> signup(
-    String name,
-    String username,
-    String password, {
-    String phone = '',
-  }) async {
+  Future<Map<String, dynamic>> signup(String name, String password) async {
     try {
       await _ensureCsrfToken();
       final csrf = await _getCsrfToken();
 
       final response = await _dio.post(
         '/api/signup/',
-        data: {
-          'patient_name': name,
-          'username': username,
-          'password': password,
-          'patient_contact': phone,
-        },
+        data: {'patient_name': name, 'password': password},
         options: Options(headers: {'X-CSRFToken': csrf}),
       );
 

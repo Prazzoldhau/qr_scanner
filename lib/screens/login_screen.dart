@@ -92,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Sign in with your Patient Code + PIN, or your Username + Password',
+                      'Sign in with your Patient Code and PIN or Password',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey.shade600,
@@ -102,12 +102,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 40),
                     CustomTextField(
                       controller: _usernameController,
-                      label: 'Patient Code or Username',
+                      label: 'Patient Code',
                       prefixIcon: Icons.person,
                       keyboardType: TextInputType.text,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your Patient Code or Username';
+                          return 'Please enter your Patient Code';
                         }
                         return null;
                       },

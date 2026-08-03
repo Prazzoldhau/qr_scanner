@@ -1,5 +1,6 @@
 // lib/screens/signup_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 import '../widgets/custom_text_field.dart';
@@ -14,9 +15,7 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -25,21 +24,19 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
     final name = _nameController.text.trim();
-    final username = _usernameController.text.trim();
     final password = _passwordController.text;
-    final phone = _phoneController.text.trim();
 
     try {
       final api = ApiService();
       await api.init();
-      final result = await api.signup(name, username, password, phone: phone);
+      final result = await api.signup(name, password);
 
       if (!mounted) return;
       if (result['success'] != true) {
         throw Exception(result['error'] ?? 'Could not create account');
       }
 
-      await _showWelcomeDialog(result['patient_code'] as String? ?? '');
+      await _showPatientCodeDialog(result['patient_code'] as String? ?? '');
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -56,7 +53,7 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  Future<void> _showWelcomeDialog(String patientCode) {
+  Future<void> _showPatientCodeDialog(String patientCode) {
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -66,17 +63,41 @@ class _SignupScreenState extends State<SignupScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Sign in next time with the username and password you just chose.'),
-            if (patientCode.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Your Patient Code (for reference): $patientCode',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            const Text('This is your Patient Code. Save it — you\'ll need it with your password to sign in next time.'),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F0FE),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
+              child: Text(
+                patientCode,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: Color(0xFF0A6EBD),
+                ),
+              ),
+            ),
           ],
         ),
         actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: patientCode));
+              if (dialogContext.mounted) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Copied to clipboard')),
+                );
+              }
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copy'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Continue'),
@@ -89,9 +110,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _usernameController.dispose();
     _passwordController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -152,21 +171,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 20),
                     CustomTextField(
-                      controller: _usernameController,
-                      label: 'Username',
-                      prefixIcon: Icons.alternate_email,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please choose a username';
-                        }
-                        if (value.trim().length < 3) {
-                          return 'Username must be at least 3 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    CustomTextField(
                       controller: _passwordController,
                       label: 'Password',
                       prefixIcon: Icons.lock,
@@ -180,13 +184,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         }
                         return null;
                       },
-                    ),
-                    const SizedBox(height: 20),
-                    CustomTextField(
-                      controller: _phoneController,
-                      label: 'Phone Number (optional)',
-                      prefixIcon: Icons.phone,
-                      keyboardType: TextInputType.phone,
                     ),
                     const SizedBox(height: 32),
                     CustomElevatedButton(
