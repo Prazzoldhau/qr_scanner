@@ -82,6 +82,61 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> signup(
+    String name,
+    String username,
+    String password, {
+    String phone = '',
+  }) async {
+    try {
+      await _ensureCsrfToken();
+      final csrf = await _getCsrfToken();
+
+      final response = await _dio.post(
+        '/api/signup/',
+        data: {
+          'patient_name': name,
+          'username': username,
+          'password': password,
+          'patient_contact': phone,
+        },
+        options: Options(headers: {'X-CSRFToken': csrf}),
+      );
+
+      final rawBody = response.data as String;
+      dynamic parsed;
+      try {
+        parsed = jsonDecode(rawBody);
+      } catch (_) {
+        throw Exception(
+          'Server returned an HTML page.\n'
+          'This might be a bot protection block.\n'
+          'Please try again later or contact support.',
+        );
+      }
+
+      if (parsed is Map<String, dynamic>) {
+        return parsed;
+      } else {
+        throw Exception('Unexpected response format: ${parsed.runtimeType}');
+      }
+    } on DioException catch (e) {
+      if (e.response != null) {
+        String message = 'Signup failed (${e.response?.statusCode})';
+        try {
+          final body = e.response?.data;
+          final parsedError = body is String ? jsonDecode(body) : body;
+          if (parsedError is Map && parsedError['error'] != null) {
+            message = parsedError['error'].toString();
+          }
+        } catch (_) {}
+        throw Exception(message);
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
+    }
+  }
+
   Future<Map<String, dynamic>> getCurrentUser() async {
     try {
       final response = await _dio.get('/api/me/');

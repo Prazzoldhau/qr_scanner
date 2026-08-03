@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 import 'qr_scanner_screen.dart';
+import 'signup_screen.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_elevated_button.dart';
 
@@ -91,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Sign in with your Patient Code and Security PIN',
+                      'Sign in with your Patient Code + PIN, or your Username + Password',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey.shade600,
@@ -101,12 +102,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 40),
                     CustomTextField(
                       controller: _usernameController,
-                      label: 'Patient Code',
+                      label: 'Patient Code or Username',
                       prefixIcon: Icons.person,
                       keyboardType: TextInputType.text,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your Patient Code';
+                          return 'Please enter your Patient Code or Username';
                         }
                         return null;
                       },
@@ -114,13 +115,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
                     CustomTextField(
                       controller: _passwordController,
-                      label: 'Security PIN (Phone)',
+                      label: 'PIN or Password',
                       prefixIcon: Icons.lock,
                       obscureText: true,
-                      keyboardType: TextInputType.phone,
+                      keyboardType: TextInputType.text,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your PIN';
+                          return 'Please enter your PIN or Password';
                         }
                         return null;
                       },
@@ -154,6 +155,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: const Text('Forgot your PIN?'),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SignupScreen()),
+                      ),
+                      child: const Text("Don't have a profile? Create one"),
                     ),
                     // ✅ ADDED: debug box shown only on error
                     if (_debugInfo.isNotEmpty)
