@@ -28,8 +28,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   int? _selectedCategory;
   bool _loading = true;
   int _cartCount = 0;
-  String _cartTotal = '0';
+  Map<int, int> _quantities = {}; // productId -> quantity in cart
   final _searchController = TextEditingController();
+
+  Map<int, int> _quantitiesFromCart(Map<String, dynamic> cart) {
+    final items = List<Map<String, dynamic>>.from(cart['items'] ?? []);
+    return {for (final item in items) item['product_id'] as int: item['quantity'] as int};
+  }
 
   @override
   void initState() {
@@ -57,7 +62,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         _categories = results[1] as List<Map<String, dynamic>>;
         final cart = results[2] as Map<String, dynamic>;
         _cartCount = cart['count'] ?? 0;
-        _cartTotal = cart['total']?.toString() ?? '0';
+        _quantities = _quantitiesFromCart(cart);
         _loading = false;
       });
     } catch (_) {
@@ -81,7 +86,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       final cart = await ApiService().getCart();
       setState(() {
         _cartCount = cart['count'] ?? _cartCount;
-        _cartTotal = cart['total']?.toString() ?? _cartTotal;
+        _quantities = _quantitiesFromCart(cart);
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -198,57 +203,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               ],
             ),
-      bottomNavigationBar: _cartCount > 0 ? _viewCartBar() : null,
-    );
-  }
-
-  Widget _viewCartBar() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        child: Material(
-          color: const Color(0xFF0A6EBD),
-          borderRadius: BorderRadius.circular(14),
-          elevation: 4,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: () async {
-              await Navigator.push(context, MaterialPageRoute(
-                builder: (_) => CartScreen(patientData: widget.patientData),
-              ));
-              _loadAll();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '$_cartCount',
-                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'NPR $_cartTotal',
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  const Text('View Cart', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -273,17 +227,34 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Widget _productCard(Map<String, dynamic> p) {
+    final id = p['id'] as int;
+    final qty = _quantities[id] ?? 0;
     return Container(
       decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: p['image_url'] != null
-                ? Image.network(p['image_url'], height: 110, width: double.infinity, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder())
-                : _placeholder(),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: p['image_url'] != null
+                    ? Image.network(p['image_url'], height: 110, width: double.infinity, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _placeholder())
+                    : _placeholder(),
+              ),
+              if (qty > 0)
+                Positioned(
+                  right: 6,
+                  top: -6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: const Color(0xFF0A6EBD), borderRadius: BorderRadius.circular(10)),
+                    child: Text('×$qty', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+            ],
           ),
           Expanded(
             child: Padding(
@@ -293,21 +264,20 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 children: [
                   Text(p['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const Spacer(),
-                  Text('NPR ${p['price']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _addToCart(p['id']),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0A6EBD),
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('NPR ${p['price']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                      InkWell(
+                        onTap: () => _addToCart(id),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(color: Color(0xFF0A6EBD), shape: BoxShape.circle),
+                          child: const Icon(Icons.add, size: 16, color: Colors.white),
+                        ),
                       ),
-                      child: const Text('+ Cart', style: TextStyle(fontSize: 12, color: Colors.white)),
-                    ),
+                    ],
                   ),
                 ],
               ),
