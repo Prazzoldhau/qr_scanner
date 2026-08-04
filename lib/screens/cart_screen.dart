@@ -183,6 +183,13 @@ class _CartScreenState extends State<CartScreen> {
                               backgroundColor: const Color(0xFF0A6EBD),
                               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              // The app-wide theme defaults every ElevatedButton to
+                              // minimumSize: Size(double.infinity, 56) (see AppTheme).
+                              // Left unset here, that swallows the whole Row and
+                              // squeezes the Total text next to it down to ~0 width,
+                              // wrapping it one character per line.
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: _placing
                                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
