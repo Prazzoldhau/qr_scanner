@@ -297,14 +297,33 @@ class ApiService {
     return jsonDecode(r.data as String) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> placeOrder({required String address, String note = ''}) async {
-    final csrf = await _getCsrfToken();
-    final r = await _dio.post(
-      '/api/order/',
-      data: {'delivery_address': address, 'notes': note},
-      options: Options(headers: {'X-CSRFToken': csrf}),
-    );
-    return jsonDecode(r.data as String) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> placeOrder({
+    required String address,
+    required String phone,
+    String note = '',
+  }) async {
+    try {
+      final csrf = await _getCsrfToken();
+      final r = await _dio.post(
+        '/api/order/',
+        data: {'delivery_address': address, 'customer_phone': phone, 'notes': note},
+        options: Options(headers: {'X-CSRFToken': csrf}),
+      );
+      return jsonDecode(r.data as String) as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        String message = 'Could not place order (${e.response?.statusCode})';
+        try {
+          final body = e.response?.data;
+          final parsedError = body is String ? jsonDecode(body) : body;
+          if (parsedError is Map && parsedError['error'] != null) {
+            message = parsedError['error'].toString();
+          }
+        } catch (_) {}
+        throw Exception(message);
+      }
+      throw Exception('Network error: ${e.message}');
+    }
   }
 
   Future<List<Map<String, dynamic>>> getOrders() async {

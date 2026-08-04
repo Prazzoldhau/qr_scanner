@@ -28,6 +28,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   int? _selectedCategory;
   bool _loading = true;
   int _cartCount = 0;
+  String _cartTotal = '0';
   final _searchController = TextEditingController();
 
   @override
@@ -56,6 +57,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         _categories = results[1] as List<Map<String, dynamic>>;
         final cart = results[2] as Map<String, dynamic>;
         _cartCount = cart['count'] ?? 0;
+        _cartTotal = cart['total']?.toString() ?? '0';
         _loading = false;
       });
     } catch (_) {
@@ -75,8 +77,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   Future<void> _addToCart(int productId) async {
     try {
-      final result = await ApiService().addToCart(productId);
-      setState(() => _cartCount = result['cart_count'] ?? _cartCount);
+      await ApiService().addToCart(productId);
+      final cart = await ApiService().getCart();
+      setState(() {
+        _cartCount = cart['count'] ?? _cartCount;
+        _cartTotal = cart['total']?.toString() ?? _cartTotal;
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Added to cart'),
@@ -192,6 +198,57 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               ],
             ),
+      bottomNavigationBar: _cartCount > 0 ? _viewCartBar() : null,
+    );
+  }
+
+  Widget _viewCartBar() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Material(
+          color: const Color(0xFF0A6EBD),
+          borderRadius: BorderRadius.circular(14),
+          elevation: 4,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () async {
+              await Navigator.push(context, MaterialPageRoute(
+                builder: (_) => CartScreen(patientData: widget.patientData),
+              ));
+              _loadAll();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$_cartCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'NPR $_cartTotal',
+                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const Text('View Cart', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

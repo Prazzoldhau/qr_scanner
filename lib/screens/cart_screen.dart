@@ -41,46 +41,61 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _checkout() async {
+    final phoneController = TextEditingController();
     final addressController = TextEditingController();
     final notesController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    InputDecoration fieldDecoration(String label) => InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.grey[500]),
+          filled: true,
+          fillColor: Colors.grey[800],
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.redAccent)),
+          focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.redAccent)),
+          errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
+        );
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: const Text('Delivery Details', style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: addressController,
-              style: const TextStyle(color: Colors.white),
-              maxLines: 2,
-              decoration: InputDecoration(
-                hintText: 'Delivery address *',
-                hintStyle: TextStyle(color: Colors.grey[600]),
-                filled: true, fillColor: Colors.grey[800],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: phoneController,
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.phone,
+                decoration: fieldDecoration('Phone Number'),
+                validator: (value) => value == null || value.trim().isEmpty ? 'Phone number is required' : null,
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: notesController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Notes (optional)',
-                hintStyle: TextStyle(color: Colors.grey[600]),
-                filled: true, fillColor: Colors.grey[800],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: addressController,
+                style: const TextStyle(color: Colors.white),
+                maxLines: 2,
+                decoration: fieldDecoration('Delivery Address'),
+                validator: (value) => value == null || value.trim().isEmpty ? 'Delivery address is required' : null,
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: notesController,
+                style: const TextStyle(color: Colors.white),
+                decoration: fieldDecoration('Notes (optional)'),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () {
-              if (addressController.text.trim().isEmpty) return;
+              if (!formKey.currentState!.validate()) return;
               Navigator.pop(ctx, true);
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0A6EBD)),
@@ -96,6 +111,7 @@ class _CartScreenState extends State<CartScreen> {
     try {
       final result = await ApiService().placeOrder(
         address: addressController.text.trim(),
+        phone: phoneController.text.trim(),
         note: notesController.text.trim(),
       );
       if (mounted) {
