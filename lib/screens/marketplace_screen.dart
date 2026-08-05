@@ -32,8 +32,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final _searchController = TextEditingController();
 
   Map<int, int> _quantitiesFromCart(Map<String, dynamic> cart) {
+    // Sum across all lines for a product -- a product can have more than one
+    // cart line when different variants of it were added separately.
     final items = List<Map<String, dynamic>>.from(cart['items'] ?? []);
-    return {for (final item in items) item['product_id'] as int: item['quantity'] as int};
+    final result = <int, int>{};
+    for (final item in items) {
+      final pid = item['product_id'] as int;
+      result[pid] = (result[pid] ?? 0) + (item['quantity'] as int);
+    }
+    return result;
   }
 
   @override
@@ -80,9 +87,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     setState(() => _products = prods);
   }
 
-  Future<void> _addToCart(int productId) async {
+  Future<void> _addToCart(int productId, {int? variantId}) async {
     try {
-      await ApiService().addToCart(productId);
+      await ApiService().addToCart(productId, variantId: variantId);
       final cart = await ApiService().getCart();
       setState(() {
         _cartCount = cart['count'] ?? _cartCount;
@@ -103,6 +110,60 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ));
       }
     }
+  }
+
+  /// Product with no variants adds directly (today's behavior, unchanged).
+  /// Product with variants shows a picker first -- price/stock is per
+  /// variant, so we can't add a sensible default.
+  Future<void> _onAddTap(Map<String, dynamic> product) async {
+    final id = product['id'] as int;
+    final variants = List<Map<String, dynamic>>.from(product['variants'] as List? ?? const []);
+    if (variants.isEmpty) {
+      _addToCart(id);
+      return;
+    }
+    final variant = await _pickVariant(product, variants);
+    if (variant != null) {
+      _addToCart(id, variantId: variant['id'] as int);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _pickVariant(Map<String, dynamic> product, List<Map<String, dynamic>> variants) {
+    return showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(product['name']?.toString() ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 4),
+              Text('Choose an option', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+              const SizedBox(height: 8),
+              for (final v in variants)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  enabled: v['in_stock'] == true,
+                  title: Text(v['label']?.toString() ?? '', style: const TextStyle(color: Colors.white)),
+                  trailing: Text(
+                    v['in_stock'] == true ? 'NPR ${v['price']}' : 'Out of stock',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: v['in_stock'] == true ? Colors.greenAccent : Colors.grey,
+                    ),
+                  ),
+                  onTap: v['in_stock'] == true ? () => Navigator.pop(ctx, v) : null,
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -269,7 +330,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     children: [
                       Text('NPR ${p['price']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold)),
                       InkWell(
-                        onTap: () => _addToCart(id),
+                        onTap: () => _onAddTap(p),
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
                           padding: const EdgeInsets.all(6),

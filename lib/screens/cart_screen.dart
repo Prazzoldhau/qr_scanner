@@ -35,8 +35,8 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  Future<void> _updateQty(int productId, int qty) async {
-    await ApiService().updateCart(productId, qty);
+  Future<void> _updateQty(int productId, int qty, {int? variantId}) async {
+    await ApiService().updateCart(productId, qty, variantId: variantId);
     _loadCart();
   }
 
@@ -206,6 +206,8 @@ class _CartScreenState extends State<CartScreen> {
   Widget _cartItem(Map<String, dynamic> item) {
     final qty = item['quantity'] as int;
     final pid = item['product_id'] as int;
+    final variantId = item['variant_id'] as int?;
+    final variantLabel = item['variant_label']?.toString() ?? '';
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -226,6 +228,10 @@ class _CartScreenState extends State<CartScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                if (variantLabel.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(variantLabel, style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                ],
                 const SizedBox(height: 4),
                 Text('NPR ${item['item_total']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13)),
               ],
@@ -234,12 +240,12 @@ class _CartScreenState extends State<CartScreen> {
           // Qty controls
           Row(
             children: [
-              _qtyBtn(Icons.remove, () => _updateQty(pid, qty - 1)),
+              _qtyBtn(Icons.remove, () => _updateQty(pid, qty - 1, variantId: variantId)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text('$qty', style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
               ),
-              _qtyBtn(Icons.add, () => _updateQty(pid, qty + 1)),
+              _qtyBtn(Icons.add, () => _updateQty(pid, qty + 1, variantId: variantId)),
             ],
           ),
         ],

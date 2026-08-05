@@ -278,20 +278,25 @@ class ApiService {
     return jsonDecode(r.data as String) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> addToCart(int productId) async {
+  Future<Map<String, dynamic>> addToCart(int productId, {int? variantId}) async {
     final csrf = await _getCsrfToken();
     final r = await _dio.post(
       '/api/cart/add/$productId/',
+      data: variantId != null ? {'variant_id': variantId} : null,
       options: Options(headers: {'X-CSRFToken': csrf}),
     );
     return jsonDecode(r.data as String) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> updateCart(int productId, int quantity) async {
+  Future<Map<String, dynamic>> updateCart(int productId, int quantity, {int? variantId}) async {
     final csrf = await _getCsrfToken();
     final r = await _dio.post(
       '/api/cart/update/',
-      data: {'product_id': productId, 'quantity': quantity},
+      data: {
+        'product_id': productId,
+        'quantity': quantity,
+        if (variantId != null) 'variant_id': variantId,
+      },
       options: Options(headers: {'X-CSRFToken': csrf}),
     );
     return jsonDecode(r.data as String) as Map<String, dynamic>;
