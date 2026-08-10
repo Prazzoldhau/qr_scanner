@@ -18,14 +18,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  String _debugInfo = ''; // ✅ ADDED
+  String _errorMessage = '';
+
+  /// Maps a thrown error to something safe to show a patient. Raw exception text
+  /// can carry server internals (status lines, stack detail, HTML bodies), so it
+  /// is never rendered directly.
+  String _friendlyError(Object e) {
+    final raw = e.toString();
+    if (raw.contains('401') || raw.contains('403')) {
+      return 'Incorrect Patient Code or PIN. Please try again.';
+    }
+    if (raw.contains('Network error') || raw.contains('timeout')) {
+      return 'Cannot reach Sajhya. Check your internet connection.';
+    }
+    return 'Sign in failed. Please try again in a moment.';
+  }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
-      _debugInfo = ''; // ✅ ADDED
+      _errorMessage = '';
     });
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
@@ -44,12 +58,13 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      final message = _friendlyError(e);
       setState(() {
-        _debugInfo = e.toString(); // ✅ ADDED
+        _errorMessage = message;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
+          content: Text(message),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -149,9 +164,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {
-                            // TODO: implement forgot PIN logic
-                          },
+                          // No self-service PIN reset exists server-side yet. A
+                          // button that silently does nothing reads as a broken
+                          // feature during Play review, so point the patient at
+                          // the recovery route that does work today.
+                          onPressed: () => showDialog<void>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Forgot your PIN?'),
+                              content: const Text(
+                                'Ask your physiotherapist to reset your PIN, or scan '
+                                'the QR code they provide to sign in without it.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          ),
                           child: const Text('Forgot your PIN?'),
                         ),
                       ],
@@ -164,17 +196,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: const Text("Don't have a profile? Create one"),
                     ),
-                    // ✅ ADDED: debug box shown only on error
-                    if (_debugInfo.isNotEmpty)
+                    if (_errorMessage.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(top: 16),
                         padding: const EdgeInsets.all(12),
-                        color: Colors.red.shade50,
-                        child: SelectableText(
-                          _debugInfo,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'monospace',
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _errorMessage,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.red.shade900,
                           ),
                         ),
                       ),

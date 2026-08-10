@@ -136,10 +136,13 @@ class ApiService {
       throw Exception('Not logged in');
     }
   }
-  Future<String> debugCookies() async {
+  /// Whether a persisted session cookie exists, without exposing its value.
+  ///
+  /// Replaces the former debugCookies(), which returned raw cookie name=value
+  /// pairs and was logged in full on every launch.
+  Future<bool> hasPersistedSession() async {
     final cookies = await _cookieJar.loadForRequest(Uri.parse(baseUrl));
-    if (cookies.isEmpty) return 'NO COOKIES FOUND';
-    return cookies.map((c) => '${c.name}=${c.value}').join(', ');
+    return cookies.any((c) => c.name == 'sessionid' && c.value.isNotEmpty);
   }
 
   Future<Map<String, dynamic>> qrLogin(String qrToken) async {
@@ -244,6 +247,35 @@ class ApiService {
         options: Options(headers: {'X-CSRFToken': csrf}),
       );
     } catch (_) {
+    } finally {
+      await _cookieJar.deleteAll();
+    }
+  }
+
+  /// Permanently deletes the signed-in patient's account and personal data.
+  ///
+  /// Google Play requires an in-app deletion path for any app that lets users
+  /// create an account. Requires a matching `POST /api/delete-account/` on the
+  /// Django side; see DEPLOYMENT.md.
+  ///
+  /// The local session is cleared regardless of the server outcome so the app
+  /// never keeps a session for an account the user asked to remove.
+  Future<void> deleteAccount() async {
+    try {
+      final csrf = await _getCsrfToken();
+      final r = await _dio.post(
+        '/api/delete-account/',
+        options: Options(headers: {'X-CSRFToken': csrf}),
+      );
+      final parsed = jsonDecode(r.data as String) as Map<String, dynamic>;
+      if (parsed['success'] != true) {
+        throw Exception(parsed['error'] ?? 'Could not delete account');
+      }
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception('Delete failed (${e.response?.statusCode})');
+      }
+      throw Exception('Network error: ${e.message}');
     } finally {
       await _cookieJar.deleteAll();
     }

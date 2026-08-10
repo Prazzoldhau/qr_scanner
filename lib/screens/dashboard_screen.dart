@@ -213,9 +213,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white70, size: 20),
-              onPressed: () => _confirmLogout(context),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
+              color: Colors.grey[900],
+              onSelected: (value) {
+                if (value == 'logout') _confirmLogout(context);
+                if (value == 'delete') _confirmDeleteAccount(context);
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.white70, size: 18),
+                      SizedBox(width: 10),
+                      Text('Log out', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                // Google Play requires an in-app account deletion path for any
+                // app offering account creation.
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_forever, color: Colors.redAccent, size: 18),
+                      SizedBox(width: 10),
+                      Text('Delete my account',
+                          style: TextStyle(color: Colors.redAccent)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -324,6 +353,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
+  }
+
+  /// In-app account deletion, required by Google Play for apps with sign-up.
+  /// Two-step (confirm, then type DELETE) because this is irreversible and sits
+  /// one tap away from Log out in the same menu.
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text('Delete your account?',
+              style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This permanently removes your profile, exercise history and '
+                'orders. It cannot be undone.\n\nType DELETE to confirm.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autocorrect: false,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'DELETE',
+                  hintStyle: TextStyle(color: Colors.white30),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                ),
+                onChanged: (_) => setDialogState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: controller.text.trim() == 'DELETE'
+                  ? () => Navigator.of(dialogContext).pop(true)
+                  : null,
+              child: const Text('Delete permanently',
+                  style: TextStyle(color: Colors.redAccent)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ApiService().deleteAccount();
+      if (!context.mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your account has been deleted.')),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not delete your account. Please try again.'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     }
   }

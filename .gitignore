@@ -5,6 +5,9 @@
 .pub-cache/
 .pub/
 build/
+# Generated, and embeds absolute paths from whichever machine ran pub get.
+.flutter-plugins-dependencies
+.flutter-plugins
 flutter_*.png
 linked_*.ds
 unlinked.ds

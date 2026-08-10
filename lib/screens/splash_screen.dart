@@ -1,5 +1,5 @@
 // lib/screens/splash_screen.dart
-import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
@@ -13,8 +13,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  String _debugInfo = '';
-
   @override
   void initState() {
     super.initState();
@@ -26,12 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final api = ApiService();
       await api.init();
 
-      // ✅ Debug: print what cookies exist before calling /api/me/
-      final cookies = await api.debugCookies();
-      debugPrint('=== COOKIES ON SPLASH: $cookies');
-
       final patientData = await api.getCurrentUser();
-      debugPrint('=== getCurrentUser success: $patientData');
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -41,12 +34,13 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
       );
     } catch (e) {
-      debugPrint('=== SplashScreen error: $e');
+      // Guarded by kDebugMode: debugPrint is NOT stripped from release builds,
+      // and this path can carry session/account detail into the device log.
+      if (kDebugMode) debugPrint('SplashScreen: no active session ($e)');
+
       if (!mounted) return;
-      // ✅ Show error on screen instead of silently going to login
-      setState(() => _debugInfo = e.toString());
-      await Future.delayed(const Duration(seconds: 3));
-      if (!mounted) return;
+      // Not being logged in is the normal first-launch path, so go straight to
+      // login instead of showing the user a raw exception.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -56,26 +50,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            if (_debugInfo.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: SelectableText(
-                  _debugInfo,
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }

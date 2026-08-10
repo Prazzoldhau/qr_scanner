@@ -5,26 +5,30 @@ workflows:
     instance_type: linux_x2
     environment:
       flutter: stable
-      # To publish a signed release build, add a keystore in
-      # Codemagic > Team settings > Code signing identities, then uncomment
-      # the two lines below (replace "sajhya_keystore" with your reference name).
-      # android_signing:
-      #   - sajhya_keystore
+      # Requires a keystore uploaded under
+      # Codemagic > Team settings > Code signing identities with the reference
+      # name "sajhya_keystore". Rename here if you used a different reference.
+      android_signing:
+        - sajhya_keystore
       vars:
-        PACKAGE_NAME: "com.example.sajhya_patient_app"
+        PACKAGE_NAME: "com.manurya.sajhya_patient_app"
     scripts:
-      - name: Write key.properties (only if a keystore is configured)
+      - name: Write key.properties
         script: |
-          if [ -n "$CM_KEYSTORE_PATH" ]; then
-            cat > $CM_BUILD_DIR/android/key.properties <<EOF
+          # A missing keystore must fail the build. Previously this fell through to
+          # debug signing, producing an artifact that Play rejects at upload with no
+          # warning until then.
+          if [ -z "$CM_KEYSTORE_PATH" ]; then
+            echo "ERROR: no keystore available. Add one in Codemagic > Team settings >"
+            echo "Code signing identities and reference it under android_signing above."
+            exit 1
+          fi
+          cat > $CM_BUILD_DIR/android/key.properties <<EOF
           storeFile=$CM_KEYSTORE_PATH
           storePassword=$CM_KEYSTORE_PASSWORD
           keyAlias=$CM_KEY_ALIAS
           keyPassword=$CM_KEY_PASSWORD
           EOF
-          else
-            echo "No keystore configured - building with debug signing."
-          fi
       - name: Get Flutter packages
         script: flutter pub get
       - name: Generate launcher icons

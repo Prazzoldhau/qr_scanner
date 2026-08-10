@@ -11,7 +11,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.sajhya_patient_app"
+    namespace = "com.manurya.sajhya_patient_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -25,8 +25,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.sajhya_patient_app"
-        minSdk = 21
+        applicationId = "com.manurya.sajhya_patient_app"
+        // Pinned to 24 to match what actually ships: the Flutter migrator raises
+        // any lower value to flutter.minSdkVersion during the build anyway.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -45,10 +47,29 @@ android {
 
     buildTypes {
         release {
-            // Signs with the release keystore when android/key.properties is present
-            // (Codemagic injects this file from your configured keystore reference).
-            // Falls back to the debug key so `flutter build apk` still works locally.
-            signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            // Signs with the release keystore from android/key.properties (Codemagic
+            // injects this file from the configured keystore reference).
+            //
+            // If the keystore is missing the build FAILS rather than silently falling
+            // back to the debug key -- a debug-signed release is rejected by Play, and
+            // the old fallback made that failure invisible until upload. For a local
+            // smoke test only, pass -PallowDebugSigning=true.
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.release
+            } else if (project.hasProperty("allowDebugSigning")) {
+                logger.warn("WARNING: signing release with the DEBUG key. This artifact CANNOT be uploaded to Google Play.")
+                signingConfig = signingConfigs.debug
+            } else {
+                throw new GradleException(
+                    "No android/key.properties found -- refusing to build an unsigned/debug-signed release.\n" +
+                    "  CI: configure a keystore in Codemagic > Code signing identities and enable android_signing in codemagic.yaml.\n" +
+                    "  Local test build only: flutter build apk --release -PallowDebugSigning=true"
+                )
+            }
+
+            minifyEnabled = true
+            shrinkResources = true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
 }
