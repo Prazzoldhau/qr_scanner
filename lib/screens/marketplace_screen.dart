@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'cart_screen.dart';
+import 'product_detail_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   final Map<String, dynamic> patientData;
@@ -87,83 +88,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     setState(() => _products = prods);
   }
 
-  Future<void> _addToCart(int productId, {int? variantId}) async {
-    try {
-      await ApiService().addToCart(productId, variantId: variantId);
-      final cart = await ApiService().getCart();
-      setState(() {
-        _cartCount = cart['count'] ?? _cartCount;
-        _quantities = _quantitiesFromCart(cart);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Added to cart'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 1),
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ));
-      }
-    }
-  }
-
-  /// Product with no variants adds directly (today's behavior, unchanged).
-  /// Product with variants shows a picker first -- price/stock is per
-  /// variant, so we can't add a sensible default.
-  Future<void> _onAddTap(Map<String, dynamic> product) async {
-    final id = product['id'] as int;
-    final variants = List<Map<String, dynamic>>.from(product['variants'] as List? ?? const []);
-    if (variants.isEmpty) {
-      _addToCart(id);
-      return;
-    }
-    final variant = await _pickVariant(product, variants);
-    if (variant != null) {
-      _addToCart(id, variantId: variant['id'] as int);
-    }
-  }
-
-  Future<Map<String, dynamic>?> _pickVariant(Map<String, dynamic> product, List<Map<String, dynamic>> variants) {
-    return showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(product['name']?.toString() ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 4),
-              Text('Choose an option', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-              const SizedBox(height: 8),
-              for (final v in variants)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  enabled: v['in_stock'] == true,
-                  title: Text(v['label']?.toString() ?? '', style: const TextStyle(color: Colors.white)),
-                  trailing: Text(
-                    v['in_stock'] == true ? 'NPR ${v['price']}' : 'Out of stock',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: v['in_stock'] == true ? Colors.greenAccent : Colors.grey,
-                    ),
-                  ),
-                  onTap: v['in_stock'] == true ? () => Navigator.pop(ctx, v) : null,
-                ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
+  /// Add to Cart now lives on the product detail page (with description and
+  /// variant picking), not the grid -- tapping a card just opens that page.
+  Future<void> _openProductDetail(Map<String, dynamic> product) async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
     );
+    if (added == true) _loadAll();
   }
 
   @override
@@ -290,61 +222,52 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   Widget _productCard(Map<String, dynamic> p) {
     final id = p['id'] as int;
     final qty = _quantities[id] ?? 0;
-    return Container(
-      decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: p['image_url'] != null
-                    ? Image.network(p['image_url'], height: 110, width: double.infinity, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholder())
-                    : _placeholder(),
-              ),
-              if (qty > 0)
-                Positioned(
-                  right: 6,
-                  top: -6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: const Color(0xFF0A6EBD), borderRadius: BorderRadius.circular(10)),
-                    child: Text('×$qty', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
+    return Material(
+      color: Colors.grey[900],
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _openProductDetail(p),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: p['image_url'] != null
+                      ? Image.network(p['image_url'], height: 110, width: double.infinity, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _placeholder())
+                      : _placeholder(),
                 ),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(p['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('NPR ${p['price']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold)),
-                      InkWell(
-                        onTap: () => _onAddTap(p),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(color: Color(0xFF0A6EBD), shape: BoxShape.circle),
-                          child: const Icon(Icons.add, size: 16, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                if (qty > 0)
+                  Positioned(
+                    right: 6,
+                    top: -6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: const Color(0xFF0A6EBD), borderRadius: BorderRadius.circular(10)),
+                      child: Text('×$qty', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
                   ),
-                ],
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(p['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const Spacer(),
+                    Text('NPR ${p['price']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
