@@ -176,16 +176,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       itemCount: _categories.length + 1,
                       itemBuilder: (context, i) {
                         if (i == 0) {
-                          return _categoryCircle(
-                            id: null,
-                            icon: const Icon(Icons.apps, color: Colors.white, size: 22),
-                            label: 'All',
-                          );
+                          return _categoryCircle(id: null, iconData: Icons.apps, label: 'All');
                         }
                         final c = _categories[i - 1];
                         return _categoryCircle(
                           id: c['id'],
-                          icon: Text(c['icon']?.toString() ?? '🏷️', style: const TextStyle(fontSize: 22)),
+                          emoji: c['icon']?.toString(),
                           label: c['name']?.toString() ?? '',
                         );
                       },
@@ -223,7 +219,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _categoryCircle({required dynamic id, required Widget icon, required String label}) {
+  Widget _categoryCircle({required dynamic id, IconData? iconData, String? emoji, required String label}) {
     final selected = _selectedCategory == id;
     return GestureDetector(
       onTap: () { setState(() => _selectedCategory = id); _loadProducts(); },
@@ -237,11 +233,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: selected ? const Color(0xFF0A6EBD) : Colors.grey[900],
+                color: selected ? const Color(0xFF0A6EBD) : Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700]!, width: selected ? 2 : 1),
+                border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[300]!, width: selected ? 2 : 1),
+                boxShadow: selected ? null : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
               ),
-              child: Center(child: icon),
+              child: Center(
+                child: iconData != null
+                    ? Icon(iconData, color: selected ? Colors.white : Colors.grey[700], size: 22)
+                    : Text(emoji ?? '🏷️', style: const TextStyle(fontSize: 22)),
+              ),
             ),
             const SizedBox(height: 4),
             SizedBox(
@@ -252,7 +253,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.grey[400],
+                  color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700],
                   fontSize: 10,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                 ),
@@ -268,8 +269,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     final id = p['id'] as int;
     final qty = _quantities[id] ?? 0;
     return Material(
-      color: Colors.grey[900],
+      color: Colors.white,
       borderRadius: BorderRadius.circular(12),
+      elevation: 1,
+      shadowColor: Colors.black.withOpacity(0.08),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _openProductDetail(p),
@@ -309,9 +312,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(p['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(p['name'] ?? '', style: const TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
-                    Text('NPR ${p['price']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                    Text('NPR ${p['price']}', style: TextStyle(color: Colors.green[700], fontSize: 13, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -322,6 +325,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _placeholder() => Container(height: 110, color: Colors.grey[800],
-      child: const Icon(Icons.medical_services_outlined, color: Colors.grey, size: 36));
+  Widget _placeholder() => Container(height: 110, color: Colors.grey[200],
+      child: Icon(Icons.medical_services_outlined, color: Colors.grey[400], size: 36));
 }
