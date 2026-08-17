@@ -48,9 +48,9 @@ class _CartScreenState extends State<CartScreen> {
 
     InputDecoration fieldDecoration(String label) => InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: Colors.grey[500]),
+          labelStyle: TextStyle(color: Colors.grey[600]),
           filled: true,
-          fillColor: Colors.grey[800],
+          fillColor: Colors.grey[100],
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
           errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.redAccent)),
           focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.redAccent)),
@@ -60,8 +60,8 @@ class _CartScreenState extends State<CartScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Delivery Details', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.white,
+        title: const Text('Delivery Details', style: TextStyle(color: Colors.black87)),
         content: Form(
           key: formKey,
           child: Column(
@@ -69,7 +69,7 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               TextFormField(
                 controller: phoneController,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black87),
                 keyboardType: TextInputType.phone,
                 decoration: fieldDecoration('Phone Number'),
                 validator: (value) => value == null || value.trim().isEmpty ? 'Phone number is required' : null,
@@ -77,7 +77,7 @@ class _CartScreenState extends State<CartScreen> {
               const SizedBox(height: 10),
               TextFormField(
                 controller: addressController,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black87),
                 maxLines: 2,
                 decoration: fieldDecoration('Delivery Address'),
                 validator: (value) => value == null || value.trim().isEmpty ? 'Delivery address is required' : null,
@@ -85,14 +85,14 @@ class _CartScreenState extends State<CartScreen> {
               const SizedBox(height: 10),
               TextFormField(
                 controller: notesController,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black87),
                 decoration: fieldDecoration('Notes (optional)'),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: Colors.grey[600]))),
           ElevatedButton(
             onPressed: () {
               if (!formKey.currentState!.validate()) return;
@@ -119,10 +119,10 @@ class _CartScreenState extends State<CartScreen> {
           context: context,
           barrierDismissible: false,
           builder: (_) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: const Row(children: [Icon(Icons.check_circle, color: Colors.greenAccent), SizedBox(width: 8), Text('Order Placed!', style: TextStyle(color: Colors.white))]),
+            backgroundColor: Colors.white,
+            title: Row(children: [Icon(Icons.check_circle, color: Colors.green[700]), const SizedBox(width: 8), const Text('Order Placed!', style: TextStyle(color: Colors.black87))]),
             content: Text('Order #${result['order_number']}\nTotal: NPR ${result['total']}',
-                style: const TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.black87)),
             actions: [
               ElevatedButton(
                 onPressed: () { Navigator.pop(context); Navigator.pop(context); },
@@ -143,16 +143,17 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('My Cart', style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('My Cart', style: TextStyle(color: Colors.black87)),
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _items.isEmpty
-              ? const Center(child: Text('Your cart is empty', style: TextStyle(color: Colors.grey)))
+              ? Center(child: Text('Your cart is empty', style: TextStyle(color: Colors.grey[600])))
               : Column(
                   children: [
                     Expanded(
@@ -165,15 +166,19 @@ class _CartScreenState extends State<CartScreen> {
                     // Total + checkout
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.grey[900], border: Border(top: BorderSide(color: Colors.grey[800]!))),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, -2))],
+                      ),
                       child: Row(
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Total', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                                Text('NPR $_total', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text('Total', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                                Text('NPR $_total', style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
@@ -211,7 +216,12 @@ class _CartScreenState extends State<CartScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+      ),
       child: Row(
         children: [
           // Image
@@ -232,13 +242,13 @@ class _CartScreenState extends State<CartScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text(item['name'] ?? '', style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
                 if (variantLabel.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(variantLabel, style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                  Text(variantLabel, style: TextStyle(color: Colors.grey[600], fontSize: 11)),
                 ],
                 const SizedBox(height: 4),
-                Text('NPR ${item['item_total']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13)),
+                Text('NPR ${item['item_total']}', style: TextStyle(color: Colors.green[700], fontSize: 13)),
               ],
             ),
           ),
@@ -248,7 +258,7 @@ class _CartScreenState extends State<CartScreen> {
               _qtyBtn(Icons.remove, () => _updateQty(pid, qty - 1, variantId: variantId)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text('$qty', style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                child: Text('$qty', style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.bold)),
               ),
               _qtyBtn(Icons.add, () => _updateQty(pid, qty + 1, variantId: variantId)),
             ],
@@ -263,12 +273,12 @@ class _CartScreenState extends State<CartScreen> {
       onTap: onTap,
       child: Container(
         width: 28, height: 28,
-        decoration: BoxDecoration(color: Colors.grey[800], borderRadius: BorderRadius.circular(6)),
-        child: Icon(icon, color: Colors.white, size: 16),
+        decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(6)),
+        child: Icon(icon, color: Colors.black87, size: 16),
       ),
     );
   }
 
-  Widget _imgPlaceholder() => Container(width: 60, height: 60, color: Colors.grey[800],
-      child: const Icon(Icons.medical_services_outlined, color: Colors.grey, size: 24));
+  Widget _imgPlaceholder() => Container(width: 60, height: 60, color: Colors.grey[200],
+      child: Icon(Icons.medical_services_outlined, color: Colors.grey[400], size: 24));
 }
