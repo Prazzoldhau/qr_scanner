@@ -64,11 +64,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final canAdd = _variants.isEmpty || (_selectedVariant?['in_stock'] == true);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(p['name']?.toString() ?? 'Product', style: const TextStyle(color: Colors.white, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        title: Text(p['name']?.toString() ?? 'Product', style: const TextStyle(color: Colors.black87, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
       body: Column(
         children: [
@@ -93,16 +94,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         Text(
                           p['name']?.toString() ?? '',
-                          style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: Colors.black87, fontSize: 19, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'NPR $price',
-                          style: const TextStyle(color: Colors.greenAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: Colors.green[700], fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         if (_variants.isNotEmpty) ...[
                           const SizedBox(height: 20),
-                          const Text('Options', style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
+                          Text('Options', style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
@@ -113,12 +114,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ],
                         const SizedBox(height: 20),
-                        const Text('Description', style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text('Description', style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         Text(
                           description.isNotEmpty ? description : 'No description available.',
                           style: TextStyle(
-                            color: description.isNotEmpty ? Colors.white70 : Colors.grey[600],
+                            color: description.isNotEmpty ? Colors.black87 : Colors.grey[500],
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -144,7 +145,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   label: Text(canAdd ? 'Add to Cart' : 'Out of stock'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0A6EBD),
-                    disabledBackgroundColor: Colors.grey[800],
+                    disabledBackgroundColor: Colors.grey[300],
+                    disabledForegroundColor: Colors.grey[600],
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
@@ -166,14 +168,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0A6EBD) : Colors.grey[900],
+          color: selected ? const Color(0xFF0A6EBD) : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700]!),
+          border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[300]!),
         ),
         child: Text(
           v['label']?.toString() ?? '',
           style: TextStyle(
-            color: inStock ? (selected ? Colors.white : Colors.grey[300]) : Colors.grey[600],
+            color: inStock ? (selected ? Colors.white : Colors.grey[700]) : Colors.grey[400],
             fontSize: 13,
             fontWeight: FontWeight.w500,
             decoration: inStock ? TextDecoration.none : TextDecoration.lineThrough,
@@ -183,5 +185,5 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _placeholder() => const Center(child: Icon(Icons.medical_services_outlined, color: Colors.grey, size: 48));
+  Widget _placeholder() => Center(child: Icon(Icons.medical_services_outlined, color: Colors.grey[400], size: 48));
 }
