@@ -80,7 +80,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Container(
                     height: 260,
                     width: double.infinity,
-                    color: Colors.grey[900],
+                    color: Colors.white,
                     child: imageUrl != null && imageUrl.isNotEmpty
                         ? Image.network(imageUrl, fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => _placeholder())

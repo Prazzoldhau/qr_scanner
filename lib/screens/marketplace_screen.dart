@@ -163,21 +163,43 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     onChanged: (v) { if (v.isEmpty) _loadProducts(); setState(() {}); },
                   ),
                 ),
-                // Category chips - Pharmacy has no sub-categories to filter by
+                // Category browse row - circular icons, Pharmacy has no
+                // sub-categories to filter by
                 if (!widget.isPharmacy)
                   SizedBox(
-                    height: 42,
+                    height: 84,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       itemCount: _categories.length + 1,
                       itemBuilder: (context, i) {
-                        if (i == 0) return _catChip(null, 'All');
+                        if (i == 0) {
+                          return _categoryCircle(
+                            id: null,
+                            icon: const Icon(Icons.apps, color: Colors.white, size: 22),
+                            label: 'All',
+                          );
+                        }
                         final c = _categories[i - 1];
-                        return _catChip(c['id'], '${c['icon']}  ${c['name']}');
+                        return _categoryCircle(
+                          id: c['id'],
+                          icon: Text(c['icon']?.toString() ?? '🏷️', style: const TextStyle(fontSize: 22)),
+                          label: c['name']?.toString() ?? '',
+                        );
                       },
                     ),
                   ),
+                // Section header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Products', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                      Text('${_products.length} items', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+                    ],
+                  ),
+                ),
                 // Product grid
                 Expanded(
                   child: _products.isEmpty
@@ -199,21 +221,42 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _catChip(dynamic id, String label) {
+  Widget _categoryCircle({required dynamic id, required Widget icon, required String label}) {
     final selected = _selectedCategory == id;
     return GestureDetector(
       onTap: () { setState(() => _selectedCategory = id); _loadProducts(); },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0A6EBD) : Colors.grey[900],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700]!),
-        ),
-        child: Center(
-          child: Text(label, style: TextStyle(color: selected ? Colors.white : Colors.grey[400], fontSize: 12)),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: selected ? const Color(0xFF0A6EBD) : Colors.grey[900],
+                shape: BoxShape.circle,
+                border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700]!, width: selected ? 2 : 1),
+              ),
+              child: Center(child: icon),
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: 64,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? Colors.white : Colors.grey[400],
+                  fontSize: 10,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -236,10 +279,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: p['image_url'] != null
-                      ? Image.network(p['image_url'], height: 110, width: double.infinity, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _placeholder())
-                      : _placeholder(),
+                  child: Container(
+                    height: 110,
+                    width: double.infinity,
+                    color: Colors.white,
+                    child: p['image_url'] != null
+                        ? Image.network(p['image_url'], fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => _placeholder())
+                        : _placeholder(),
+                  ),
                 ),
                 if (qty > 0)
                   Positioned(

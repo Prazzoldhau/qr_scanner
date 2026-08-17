@@ -217,9 +217,14 @@ class _CartScreenState extends State<CartScreen> {
           // Image
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: item['image_url'] != null && (item['image_url'] as String).isNotEmpty
-                ? Image.network(item['image_url'], width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _imgPlaceholder())
-                : _imgPlaceholder(),
+            child: Container(
+              width: 60,
+              height: 60,
+              color: Colors.white,
+              child: item['image_url'] != null && (item['image_url'] as String).isNotEmpty
+                  ? Image.network(item['image_url'], fit: BoxFit.contain, errorBuilder: (_, __, ___) => _imgPlaceholder())
+                  : _imgPlaceholder(),
+            ),
           ),
           const SizedBox(width: 12),
           // Name + price
