@@ -101,16 +101,44 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(widget.title, style: const TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        titleSpacing: 0,
+        title: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: TextField(
+            controller: _searchController,
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: widget.isPharmacy ? 'Search medicines...' : 'Search products...',
+              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+              isDense: true,
+              prefixIcon: Icon(Icons.search, color: Colors.grey[500], size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear, color: Colors.grey[500], size: 18),
+                      onPressed: () { _searchController.clear(); _loadProducts(); },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onSubmitted: (_) => _loadProducts(),
+            onChanged: (v) { if (v.isEmpty) _loadProducts(); setState(() {}); },
+          ),
+        ),
         actions: [
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black87),
                 onPressed: () async {
                   await Navigator.push(context, MaterialPageRoute(
                     builder: (_) => CartScreen(patientData: widget.patientData),
@@ -129,40 +157,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
             ],
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Search bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                  child: TextField(
-                    controller: _searchController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: widget.isPharmacy ? 'Search medicines...' : 'Search products...',
-                      hintStyle: TextStyle(color: Colors.grey[600]),
-                      filled: true,
-                      fillColor: Colors.grey[900],
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.grey),
-                              onPressed: () { _searchController.clear(); _loadProducts(); },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                    onSubmitted: (_) => _loadProducts(),
-                    onChanged: (v) { if (v.isEmpty) _loadProducts(); setState(() {}); },
-                  ),
-                ),
+                const SizedBox(height: 8),
                 // Category browse row - circular icons, Pharmacy has no
                 // sub-categories to filter by
                 if (!widget.isPharmacy)
@@ -195,15 +197,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Products', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-                      Text('${_products.length} items', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+                      const Text('Products', style: TextStyle(color: Colors.black87, fontSize: 17, fontWeight: FontWeight.bold)),
+                      Text('${_products.length} items', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                     ],
                   ),
                 ),
                 // Product grid
                 Expanded(
                   child: _products.isEmpty
-                      ? const Center(child: Text('No products found', style: TextStyle(color: Colors.grey)))
+                      ? Center(child: Text('No products found', style: TextStyle(color: Colors.grey[600])))
                       : GridView.builder(
                           padding: const EdgeInsets.all(12),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -280,7 +282,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: Container(
-                    height: 110,
+                    height: 140,
                     width: double.infinity,
                     color: Colors.white,
                     child: p['image_url'] != null
@@ -308,7 +310,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(p['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
-                    const Spacer(),
+                    const SizedBox(height: 6),
                     Text('NPR ${p['price']}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold)),
                   ],
                 ),
