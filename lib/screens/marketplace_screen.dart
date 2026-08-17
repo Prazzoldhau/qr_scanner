@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
@@ -169,7 +170,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 // sub-categories to filter by
                 if (!widget.isPharmacy)
                   SizedBox(
-                    height: 84,
+                    height: 66,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -182,6 +183,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         return _categoryCircle(
                           id: c['id'],
                           emoji: c['icon']?.toString(),
+                          imageUrl: c['icon_url']?.toString(),
                           label: c['name']?.toString() ?? '',
                         );
                       },
@@ -219,34 +221,42 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _categoryCircle({required dynamic id, IconData? iconData, String? emoji, required String label}) {
+  Widget _categoryCircle({required dynamic id, IconData? iconData, String? emoji, String? imageUrl, required String label}) {
     final selected = _selectedCategory == id;
+    const size = 40.0;
     return GestureDetector(
       onTap: () { setState(() => _selectedCategory = id); _loadProducts(); },
       child: Padding(
-        padding: const EdgeInsets.only(right: 14),
+        padding: const EdgeInsets.only(right: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              width: 52,
-              height: 52,
+              width: size,
+              height: size,
               decoration: BoxDecoration(
                 color: selected ? const Color(0xFF0A6EBD) : Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[300]!, width: selected ? 2 : 1),
                 boxShadow: selected ? null : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
               ),
-              child: Center(
-                child: iconData != null
-                    ? Icon(iconData, color: selected ? Colors.white : Colors.grey[700], size: 22)
-                    : Text(emoji ?? '🏷️', style: const TextStyle(fontSize: 22)),
-              ),
+              child: (imageUrl != null && imageUrl.isNotEmpty)
+                  ? ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        width: size,
+                        height: size,
+                        fit: BoxFit.cover,
+                        fadeInDuration: const Duration(milliseconds: 150),
+                        errorWidget: (_, __, ___) => _categoryFallbackIcon(iconData, emoji, selected),
+                      ),
+                    )
+                  : Center(child: _categoryFallbackIcon(iconData, emoji, selected)),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             SizedBox(
-              width: 64,
+              width: 56,
               child: Text(
                 label,
                 textAlign: TextAlign.center,
@@ -254,8 +264,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700],
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  height: 1.1,
                 ),
               ),
             ),
@@ -263,6 +274,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ),
       ),
     );
+  }
+
+  Widget _categoryFallbackIcon(IconData? iconData, String? emoji, bool selected) {
+    return iconData != null
+        ? Icon(iconData, color: selected ? Colors.white : Colors.grey[700], size: 16)
+        : Text(emoji ?? '🏷️', style: const TextStyle(fontSize: 16));
   }
 
   Widget _productCard(Map<String, dynamic> p) {
