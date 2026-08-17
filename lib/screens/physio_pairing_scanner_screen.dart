@@ -3,8 +3,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 // Scans a physio's pairing QR and pops the scanned token back to the
 // caller (My Physio screen), which does the actual pairing API call -
-// mirrors ActivationScannerScreen's "scan, pop, caller calls the API"
-// shape so the camera/permission-handling logic isn't duplicated.
+// keeps camera/permission-handling logic in one simple "scan, pop,
+// caller calls the API" shape.
 class PhysioPairingScannerScreen extends StatefulWidget {
   const PhysioPairingScannerScreen({super.key});
 
