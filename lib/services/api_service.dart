@@ -325,4 +325,41 @@ class ApiService {
     final d = jsonDecode(r.data as String) as Map<String, dynamic>;
     return d['physio'] as Map<String, dynamic>?;
   }
+
+  // ── Lab service (Blood Investigation) ────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getLabTests() async {
+    final r = await _dio.get('/api/lab/tests/');
+    final d = jsonDecode(r.data as String);
+    return List<Map<String, dynamic>>.from(d['lab_tests']);
+  }
+
+  Future<Map<String, dynamic>> submitLabRequest(List<int> testIds, {String notes = ''}) async {
+    try {
+      final r = await _dio.post(
+        '/api/lab/request/',
+        data: {'test_ids': testIds, 'notes': notes},
+      );
+      return jsonDecode(r.data as String) as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        String message = 'Could not submit request (${e.response?.statusCode})';
+        try {
+          final body = e.response?.data;
+          final parsedError = body is String ? jsonDecode(body) : body;
+          if (parsedError is Map && parsedError['error'] != null) {
+            message = parsedError['error'].toString();
+          }
+        } catch (_) {}
+        throw Exception(message);
+      }
+      throw Exception('Network error: ${e.message}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getLabRequests() async {
+    final r = await _dio.get('/api/lab/requests/');
+    final d = jsonDecode(r.data as String);
+    return List<Map<String, dynamic>>.from(d['lab_requests']);
+  }
 }
