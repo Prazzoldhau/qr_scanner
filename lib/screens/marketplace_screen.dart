@@ -329,9 +329,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(p['name'] ?? '', style: const TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(
+                      p['name'] ?? '',
+                      style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 6),
-                    Text('NPR ${p['price']}', style: TextStyle(color: Colors.green[700], fontSize: 13, fontWeight: FontWeight.bold)),
+                    // Price is what a shopper scans a grid for first, so it
+                    // gets to be the largest, boldest text on the card --
+                    // was only 1pt bigger than the name before, easy to miss.
+                    Text('NPR ${p['price']}', style: TextStyle(color: Colors.green[700], fontSize: 16, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
