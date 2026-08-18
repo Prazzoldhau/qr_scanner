@@ -147,6 +147,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (rawPrescription != null) {
       _prefetchExerciseImages(Prescription.fromJson(rawPrescription));
     }
+
+    // Fire-and-forget daily-open ping. Dashboard only loads after a
+    // confirmed login, so this is a much cleaner "did they actually use
+    // the app today" signal than trying to infer it from server sessions.
+    ApiService().pingAppOpen().catchError((_) {});
   }
 
   void _prefetchExerciseImages(Prescription prescription) {
@@ -741,6 +746,10 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     final url = widget.exercise.youtubeUrl;
     if (url == null || url.trim().isEmpty) return;
     final uri = Uri.tryParse(url);
+    // Fire-and-forget -- log the click regardless of whether launchUrl
+    // below actually succeeds; a bad/unreachable link is still a genuine
+    // attempt to watch it.
+    ApiService().pingVideoClick(widget.exercise.id).catchError((_) {});
     if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -205,6 +205,20 @@ class ApiService {
     }
   }
 
+  // ── Engagement tracking ──────────────────────────────────
+  // Both are fire-and-forget: callers swallow errors so a flaky network
+  // never blocks the dashboard loading or a video from opening. These
+  // exist because the "mark done" completion flag turned out to badly
+  // under-report real usage -- this is the independent signal for whether
+  // the app is actually being opened/used day to day.
+  Future<void> pingAppOpen() async {
+    await _dio.post('/api/ping-open/');
+  }
+
+  Future<void> pingVideoClick(int exerciseId) async {
+    await _dio.post('/api/exercise/$exerciseId/video-click/');
+  }
+
   Future<void> logout() async {
     try {
       final csrf = await _getCsrfToken();
