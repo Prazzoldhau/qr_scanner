@@ -77,11 +77,15 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Body stays black -- it's a live camera feed; the overlay/scrim
+      // needs to stay dark for the frame outline and instruction text to
+      // read against unpredictable video content, same as the physio
+      // pairing scanner.
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Scan QR Code', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        title: const Text('Scan QR Code', style: TextStyle(color: Colors.black87)),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
         actions: [
           IconButton(
             icon: ValueListenableBuilder(

@@ -62,11 +62,12 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('My Physio', style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('My Physio', style: TextStyle(color: Colors.black87)),
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -80,7 +81,7 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
                       // Avatar
                       CircleAvatar(
                         radius: 48,
-                        backgroundColor: const Color(0xFF6C63FF).withOpacity(0.2),
+                        backgroundColor: const Color(0xFF6C63FF).withOpacity(0.14),
                         child: Text(
                           (_physio!['name'] as String? ?? 'P')[0].toUpperCase(),
                           style: const TextStyle(color: Color(0xFF6C63FF), fontSize: 36, fontWeight: FontWeight.bold),
@@ -89,7 +90,7 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
                       const SizedBox(height: 16),
                       Text(
                         _physio!['name'] ?? 'Your Physio',
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -102,8 +103,10 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.grey[900],
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
                         ),
                         child: Column(
                           children: [
@@ -118,9 +121,9 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6C63FF).withOpacity(0.1),
+                          color: const Color(0xFF6C63FF).withOpacity(0.08),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.3)),
+                          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.25)),
                         ),
                         child: const Row(
                           children: [
@@ -129,7 +132,7 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
                             Expanded(
                               child: Text(
                                 'Contact your physio directly at your clinic for appointments and queries.',
-                                style: TextStyle(color: Colors.white70, fontSize: 13),
+                                style: TextStyle(color: Colors.black87, fontSize: 13),
                               ),
                             ),
                           ],
@@ -148,17 +151,17 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.person_search_outlined, color: Colors.grey, size: 56),
+            Icon(Icons.person_search_outlined, color: Colors.grey[400], size: 56),
             const SizedBox(height: 16),
             const Text(
               'No physio assigned yet',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Scan your physio\'s pairing QR code to connect with them.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
             const SizedBox(height: 28),
             ElevatedButton.icon(
@@ -189,13 +192,13 @@ class _PhysioContactScreenState extends State<PhysioContactScreen> {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          Icon(icon, color: Colors.grey, size: 20),
+          Icon(icon, color: Colors.grey[500], size: 20),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 11)),
-              Text(value, style: const TextStyle(color: Colors.white, fontSize: 14)),
+              Text(value, style: const TextStyle(color: Colors.black87, fontSize: 14)),
             ],
           ),
         ],

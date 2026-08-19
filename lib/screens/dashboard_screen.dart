@@ -205,20 +205,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _handleBackPress();
       },
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
-          title: Text(patientName, style: const TextStyle(color: Colors.white)),
-          backgroundColor: Colors.black,
+          title: Text(patientName, style: const TextStyle(color: Colors.black87)),
+          backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: const IconThemeData(color: Colors.black87),
           actions: [
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white70, size: 20),
+              icon: Icon(Icons.logout, color: Colors.grey[600], size: 20),
               onPressed: () => _confirmLogout(context),
             ),
           ],
         ),
         body: Container(
-          color: Colors.black,
+          color: Colors.white,
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -264,11 +265,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 16),
                   // Exercise section header
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       'Exercise Prescriptions',
-                      style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                      style: TextStyle(color: Colors.grey[700], fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5),
                     ),
                   ),
                   if (prescription == null)
@@ -294,11 +295,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Log out?', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        backgroundColor: Colors.white,
+        title: const Text('Log out?', style: TextStyle(color: Colors.black87)),
+        content: Text(
           'You will need to sign in again to view your exercises.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Colors.grey[700]),
         ),
         actions: [
           TextButton(
@@ -356,21 +357,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const CustomCard(
-      color: Colors.grey,
-      padding: EdgeInsets.all(32),
+    return CustomCard(
+      color: Colors.grey[50]!,
+      padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          Icon(Icons.assignment_outlined, size: 48, color: Colors.grey),
-          SizedBox(height: 12),
-          Text(
+          Icon(Icons.assignment_outlined, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          const Text(
             'No Prescriptions Yet',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             'You do not have any exercise prescriptions.',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -380,12 +381,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildExerciseFeed(List<Exercise> exercises) {
     if (exercises.isEmpty) {
-      return const CustomCard(
-        color: Colors.grey,
+      return CustomCard(
+        color: Colors.grey[50]!,
         child: Text(
           'No exercises assigned.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Colors.grey[600]),
         ),
       );
     }
@@ -403,19 +404,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildNotesCard(String notes) {
     return CustomCard(
-      color: Colors.grey[800]!,
+      color: const Color(0xFFE8F0FE),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             '📋 Prescription Notes',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const SizedBox(height: 6),
           Text(
             notes,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
           ),
         ],
       ),
@@ -525,9 +526,9 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[800]!),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,7 +541,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
                 icon: const Icon(Icons.translate, size: 15),
                 label: Text(showEnglish ? 'नेपालीमा हेर्नुहोस्' : 'View in English'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.blueAccent,
+                  foregroundColor: const Color(0xFF0A6EBD),
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -552,7 +553,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
           Text(
             description.isNotEmpty ? description : 'No instructions added for this exercise yet.',
             style: TextStyle(
-              color: description.isNotEmpty ? Colors.white70 : Colors.grey[600],
+              color: description.isNotEmpty ? Colors.black87 : Colors.grey[500],
               fontSize: 13,
               height: 1.4,
             ),
@@ -604,7 +605,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
               child: Container(
                 width: double.infinity,
                 height: thumbnailHeight,
-                color: Colors.grey[900],
+                color: Colors.grey[100],
                 child: exercise.exerciseUrl != null
                     ? CachedNetworkImage(
                         imageUrl: exercise.exerciseUrl!,
@@ -613,11 +614,11 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
                         fit: BoxFit.contain,
                         memCacheWidth: (cardWidth * MediaQuery.of(context).devicePixelRatio).round(),
                         fadeInDuration: const Duration(milliseconds: 150),
-                        placeholder: (_, __) => const Center(
+                        placeholder: (_, __) => Center(
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[400]),
                           ),
                         ),
                         errorWidget: (_, __, ___) => _noImage(thumbnailHeight),
@@ -633,7 +634,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             child: Text(
               exercise.exerciseName,
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.black87,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -683,7 +684,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
           ],
 
           const SizedBox(height: 8),
-          Divider(color: Colors.grey[850], thickness: 1),
+          Divider(color: Colors.grey[200], thickness: 1),
         ],
       ),
     );
@@ -692,8 +693,8 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
   Widget _noImage(double height) {
     return Container(
       height: height,
-      color: Colors.grey[800],
-      child: const Icon(Icons.image_not_supported, color: Colors.grey),
+      color: Colors.grey[100],
+      child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
     );
   }
 
@@ -703,12 +704,12 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
         children: [
           TextSpan(
             text: '$label: ',
-            style: const TextStyle(color: Colors.grey, fontSize: 13),
+            style: TextStyle(color: Colors.grey[600], fontSize: 13),
           ),
           TextSpan(
             text: value,
             style: const TextStyle(
-              color: Colors.white70,
+              color: Colors.black87,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -732,12 +733,12 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         '$emoji $label',
-        style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
+        style: TextStyle(color: Colors.grey[700], fontSize: 11, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -773,8 +774,10 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             icon: const Icon(Icons.comment_outlined, size: 18),
             label: const Text('Comment'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.greenAccent,
-              side: const BorderSide(color: Colors.greenAccent),
+              // greenAccent reads poorly against white (same issue found
+              // earlier on price text in Marketplace) -- green[700] instead.
+              foregroundColor: Colors.green[700],
+              side: BorderSide(color: Colors.green[700]!),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               textStyle: const TextStyle(fontSize: 13),
@@ -840,13 +843,13 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
 
   Widget _buildFeedbackPanel() {
     if (_isSubmitted) {
-      return const Row(
+      return Row(
         children: [
-          Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
-          SizedBox(width: 6),
+          Icon(Icons.check_circle, color: Colors.green[700], size: 18),
+          const SizedBox(width: 6),
           Text(
             'Feedback recorded',
-            style: TextStyle(color: Colors.greenAccent, fontSize: 13),
+            style: TextStyle(color: Colors.green[700], fontSize: 13),
           ),
         ],
       );
@@ -857,9 +860,9 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[800]!),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -870,7 +873,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
               const Text(
                 'How did it feel?',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: Colors.black87,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -888,10 +891,10 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _feedbackBtn('normal', 'Normal', Colors.green),
-              _feedbackBtn('hard', 'Hard', Colors.amber),
-              _feedbackBtn('painful', 'Painful', Colors.orange),
-              _feedbackBtn('increased_symptom', 'Symptoms Worsening', Colors.red),
+              _feedbackBtn('normal', 'Normal', Colors.green[700]!),
+              _feedbackBtn('hard', 'Hard', Colors.amber[800]!),
+              _feedbackBtn('painful', 'Painful', Colors.orange[800]!),
+              _feedbackBtn('increased_symptom', 'Symptoms Worsening', Colors.red[700]!),
             ],
           ),
 
@@ -902,17 +905,17 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
               controller: _noteController,
               maxLength: 300,
               maxLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: const TextStyle(color: Colors.black87, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Describe what you felt...',
-                hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 13),
                 filled: true,
-                fillColor: Colors.grey[800],
+                fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
-                counterStyle: TextStyle(color: Colors.grey[600], fontSize: 11),
+                counterStyle: TextStyle(color: Colors.grey[500], fontSize: 11),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 10,
@@ -929,9 +932,9 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
               ElevatedButton(
                 onPressed: _selectedFeedback == null || _isSubmitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: const Color(0xFF0A6EBD),
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[700],
+                  disabledBackgroundColor: Colors.grey[300],
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -959,9 +962,9 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
+                child: Text(
                   'Skip',
-                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
                 ),
               ),
             ],
@@ -979,9 +982,9 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.2) : Colors.transparent,
+          color: selected ? color.withOpacity(0.12) : Colors.transparent,
           border: Border.all(
-            color: selected ? color : Colors.grey[700]!,
+            color: selected ? color : Colors.grey[300]!,
             width: selected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(20),
@@ -989,7 +992,7 @@ class _ExerciseFeedItemState extends State<_ExerciseFeedItem> {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? color : Colors.grey[500],
+            color: selected ? color : Colors.grey[600],
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
           ),
@@ -1095,7 +1098,7 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Container(color: Colors.grey[900]),
+                Container(color: Colors.grey[100]),
                 GestureDetector(
                   onHorizontalDragEnd: (details) {
                     final velocity = details.primaryVelocity ?? 0;
@@ -1118,15 +1121,15 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
                       // step images, so skip this widget's own fade-in to
                       // avoid animating twice.
                       fadeInDuration: Duration.zero,
-                      placeholder: (_, __) => const Center(
+                      placeholder: (_, __) => Center(
                         child: SizedBox(
                           width: 28,
                           height: 28,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[400]),
                         ),
                       ),
-                      errorWidget: (_, __, ___) => const Center(
-                        child: Icon(Icons.image_not_supported, color: Colors.grey),
+                      errorWidget: (_, __, ___) => Center(
+                        child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
                       ),
                     ),
                   ),
@@ -1173,7 +1176,7 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
                 height: isActive ? 8 : 6,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive ? Colors.greenAccent : Colors.grey[700],
+                  color: isActive ? Colors.green[700] : Colors.grey[300],
                 ),
               );
             }),
@@ -1182,7 +1185,7 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
               child: Text(
                 'Step ${_currentPage + 1} of ${images.length}'
                 '${(current.label != null && current.label!.trim().isNotEmpty) ? ' — ${current.label}' : ''}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: Colors.grey[700], fontSize: 12),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -1193,6 +1196,10 @@ class _ExerciseImageCarouselState extends State<_ExerciseImageCarousel> {
   }
 
   Widget _carouselButton(IconData icon, VoidCallback onTap, {bool small = false}) {
+    // Deliberately still a dark scrim, unlike the rest of this screen --
+    // this overlays directly on top of a photo of unpredictable content/
+    // color, so it needs guaranteed contrast rather than following the
+    // light theme (same reasoning as the QR scanner overlays).
     final size = small ? 30.0 : 36.0;
     return GestureDetector(
       onTap: onTap,

@@ -34,11 +34,12 @@ class ServicesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Services', style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('Services', style: TextStyle(color: Colors.black87)),
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
@@ -47,7 +48,7 @@ class ServicesScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final service = _services[index];
           return Material(
-            color: Colors.grey[900],
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
@@ -60,15 +61,20 @@ class ServicesScreen extends StatelessWidget {
                   SnackBar(content: Text('${service.label} is coming soon')),
                 );
               },
-              child: Padding(
+              child: Container(
                 padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+                ),
                 child: Row(
                   children: [
                     Container(
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: service.color.withOpacity(0.14),
+                        color: service.color.withOpacity(0.12),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(service.icon, color: service.color, size: 22),
@@ -77,23 +83,23 @@ class ServicesScreen extends StatelessWidget {
                     Expanded(
                       child: Text(
                         service.label,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w500),
                       ),
                     ),
                     if (service.builder == null)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
+                          color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Coming soon',
-                          style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500),
+                          style: TextStyle(color: Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w500),
                         ),
                       )
                     else
-                      Icon(Icons.chevron_right, color: Colors.white38, size: 20),
+                      Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
                   ],
                 ),
               ),

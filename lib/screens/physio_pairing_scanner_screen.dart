@@ -56,11 +56,15 @@ class _PhysioPairingScannerScreenState extends State<PhysioPairingScannerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Body stays black -- it's a live camera feed, and the overlay/scrim
+      // here needs to stay dark for the frame outline and instruction text
+      // to read against unpredictable video content. Same convention as
+      // camera screens in otherwise-light apps generally use.
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Scan Physio QR', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        title: const Text('Scan Physio QR', style: TextStyle(color: Colors.black87)),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
         actions: [
           IconButton(
             icon: ValueListenableBuilder(
