@@ -15,6 +15,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Map<String, dynamic>? _selectedVariant;
   bool _adding = false;
 
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +28,41 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         orElse: () => _variants.first,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _selectVariant(Map<String, dynamic> v) {
+    setState(() {
+      _selectedVariant = v;
+      _currentPage = 0;
+    });
+    // The gallery for this variant may be shorter than whatever page the
+    // old one was showing -- jump back to the first photo rather than
+    // leaving PageView pointed at an index that might not exist any more.
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+  }
+
+  /// The variant's own photo replaces the whole gallery when it has one
+  /// (there's no per-variant gallery, just a single override image) --
+  /// otherwise the product's own gallery (main photo + any extra photos
+  /// added in admin). Always falls back sensibly so older cached product
+  /// maps without an `images` key still show the single main photo.
+  List<String> get _galleryUrls {
+    final variantImage = _selectedVariant?['image_url']?.toString();
+    if (variantImage != null && variantImage.isNotEmpty) {
+      return [variantImage];
+    }
+    final images = (widget.product['images'] as List?)?.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    if (images != null && images.isNotEmpty) return images;
+    final single = widget.product['image_url']?.toString();
+    return (single != null && single.isNotEmpty) ? [single] : [];
   }
 
   Future<void> _addToCart() async {
@@ -58,7 +96,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final p = widget.product;
-    final imageUrl = (_selectedVariant?['image_url'] ?? p['image_url'])?.toString();
+    final images = _galleryUrls;
     final price = _selectedVariant?['price'] ?? p['price'];
     final description = (p['description'] ?? '').toString().trim();
     final canAdd = _variants.isEmpty || (_selectedVariant?['in_stock'] == true);
@@ -78,14 +116,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 260,
+                  SizedBox(
+                    height: 340,
                     width: double.infinity,
-                    color: Colors.white,
-                    child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(imageUrl, fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => _placeholder())
-                        : _placeholder(),
+                    child: images.isEmpty
+                        ? _placeholder()
+                        : Stack(
+                            children: [
+                              PageView.builder(
+                                controller: _pageController,
+                                itemCount: images.length,
+                                onPageChanged: (i) => setState(() => _currentPage = i),
+                                itemBuilder: (_, i) => _ZoomableProductImage(
+                                  url: images[i],
+                                  placeholder: _placeholder(),
+                                ),
+                              ),
+                              if (images.length > 1)
+                                Positioned(
+                                  bottom: 10,
+                                  left: 0,
+                                  right: 0,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      for (int i = 0; i < images.length; i++)
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 150),
+                                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                                          width: i == _currentPage ? 8 : 6,
+                                          height: i == _currentPage ? 8 : 6,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: i == _currentPage ? const Color(0xFF0A6EBD) : Colors.grey[300],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -164,7 +234,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final selected = _selectedVariant != null && _selectedVariant!['id'] == v['id'];
     final inStock = v['in_stock'] == true;
     return GestureDetector(
-      onTap: inStock ? () => setState(() => _selectedVariant = v) : null,
+      onTap: inStock ? () => _selectVariant(v) : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
@@ -186,4 +256,63 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _placeholder() => Center(child: Icon(Icons.medical_services_outlined, color: Colors.grey[400], size: 48));
+}
+
+/// A single gallery photo: pinch/double-tap to zoom, up to 4x.
+///
+/// InteractiveViewer always claims pan gestures by default, even at 1x
+/// zoom -- inside a PageView that means it eats the horizontal swipe
+/// meant to change photos, before PageView's own drag recognizer ever
+/// sees it. Panning is only enabled once the image is actually zoomed
+/// in, so an unzoomed swipe falls through to PageView as normal, and
+/// pinch-zoom (a two-finger gesture, not competing with the one-finger
+/// swipe) still always works.
+class _ZoomableProductImage extends StatefulWidget {
+  final String url;
+  final Widget placeholder;
+  const _ZoomableProductImage({required this.url, required this.placeholder});
+
+  @override
+  State<_ZoomableProductImage> createState() => _ZoomableProductImageState();
+}
+
+class _ZoomableProductImageState extends State<_ZoomableProductImage> {
+  final TransformationController _controller = TransformationController();
+  bool _zoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTransformChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onTransformChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTransformChanged() {
+    final zoomed = _controller.value.getMaxScaleOnAxis() > 1.01;
+    if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InteractiveViewer(
+      transformationController: _controller,
+      minScale: 1,
+      maxScale: 4,
+      panEnabled: _zoomed,
+      child: Container(
+        color: Colors.white,
+        child: Image.network(
+          widget.url,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => widget.placeholder,
+        ),
+      ),
+    );
+  }
 }
