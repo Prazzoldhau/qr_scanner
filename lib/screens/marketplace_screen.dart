@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
@@ -33,6 +34,46 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   Map<int, int> _quantities = {}; // productId -> quantity in cart
   final _searchController = TextEditingController();
 
+  // Category row auto-cycles 6 at a time instead of scrolling -- see
+  // _startCategoryAutoCycle.
+  final _categoryPageController = PageController();
+  Timer? _categoryAutoTimer;
+  int _categoryPageIndex = 0;
+
+  List<Map<String, dynamic>> get _categoryEntries => [
+        {'id': null, 'iconData': Icons.apps, 'label': 'All'},
+        for (final c in _categories)
+          {'id': c['id'], 'emoji': c['icon']?.toString(), 'imageUrl': c['icon_url']?.toString(), 'label': c['name']?.toString() ?? ''},
+      ];
+
+  /// 6 categories per page ("All" counts as one) -- shown one page at a
+  /// time instead of one long scrollable row.
+  List<List<Map<String, dynamic>>> get _categoryPages {
+    const perPage = 6;
+    final entries = _categoryEntries;
+    return [
+      for (var i = 0; i < entries.length; i += perPage) entries.sublist(i, i + perPage > entries.length ? entries.length : i + perPage),
+    ];
+  }
+
+  /// Every 10s, jump to the next page of 6 (wrapping back to the first
+  /// page after the last) -- a clean swap, not a continuous marquee-style
+  /// scroll.
+  void _startCategoryAutoCycle() {
+    _categoryAutoTimer?.cancel();
+    final pageCount = _categoryPages.length;
+    if (pageCount <= 1) return; // nothing to cycle through
+    _categoryAutoTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!mounted || !_categoryPageController.hasClients) return;
+      _categoryPageIndex = (_categoryPageIndex + 1) % pageCount;
+      _categoryPageController.animateToPage(
+        _categoryPageIndex,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
   Map<int, int> _quantitiesFromCart(Map<String, dynamic> cart) {
     // Sum across all lines for a product -- a product can have more than one
     // cart line when different variants of it were added separately.
@@ -53,6 +94,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   @override
   void dispose() {
+    _categoryAutoTimer?.cancel();
+    _categoryPageController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -66,6 +109,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         widget.isPharmacy ? Future.value(<Map<String, dynamic>>[]) : api.getCategories(),
         api.getCart(),
       ]);
+      if (!mounted) return;
       setState(() {
         _products = results[0] as List<Map<String, dynamic>>;
         _categories = results[1] as List<Map<String, dynamic>>;
@@ -74,8 +118,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         _quantities = _quantitiesFromCart(cart);
         _loading = false;
       });
+      _startCategoryAutoCycle();
     } catch (_) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -171,22 +216,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 if (!widget.isPharmacy)
                   SizedBox(
                     height: 66,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: _categories.length + 1,
-                      itemBuilder: (context, i) {
-                        if (i == 0) {
-                          return _categoryCircle(id: null, iconData: Icons.apps, label: 'All');
-                        }
-                        final c = _categories[i - 1];
-                        return _categoryCircle(
-                          id: c['id'],
-                          emoji: c['icon']?.toString(),
-                          imageUrl: c['icon_url']?.toString(),
-                          label: c['name']?.toString() ?? '',
-                        );
-                      },
+                    child: PageView(
+                      controller: _categoryPageController,
+                      onPageChanged: (i) => _categoryPageIndex = i,
+                      children: [
+                        for (final page in _categoryPages)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [for (final e in page) _categoryCircle(e)],
+                          ),
+                      ],
                     ),
                   ),
                 // Section header
@@ -221,57 +260,59 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _categoryCircle({required dynamic id, IconData? iconData, String? emoji, String? imageUrl, required String label}) {
+  Widget _categoryCircle(Map<String, dynamic> entry) {
+    final id = entry['id'];
+    final iconData = entry['iconData'] as IconData?;
+    final emoji = entry['emoji'] as String?;
+    final imageUrl = entry['imageUrl'] as String?;
+    final label = entry['label'] as String? ?? '';
     final selected = _selectedCategory == id;
     const size = 40.0;
     return GestureDetector(
       onTap: () { setState(() => _selectedCategory = id); _loadProducts(); },
-      child: Padding(
-        padding: const EdgeInsets.only(right: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: selected ? const Color(0xFF0A6EBD) : Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[300]!, width: selected ? 2 : 1),
-                boxShadow: selected ? null : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-              ),
-              child: (imageUrl != null && imageUrl.isNotEmpty)
-                  ? ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        width: size,
-                        height: size,
-                        fit: BoxFit.cover,
-                        fadeInDuration: const Duration(milliseconds: 150),
-                        errorWidget: (_, __, ___) => _categoryFallbackIcon(iconData, emoji, selected),
-                      ),
-                    )
-                  : Center(child: _categoryFallbackIcon(iconData, emoji, selected)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: selected ? const Color(0xFF0A6EBD) : Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: selected ? const Color(0xFF0A6EBD) : Colors.grey[300]!, width: selected ? 2 : 1),
+              boxShadow: selected ? null : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
             ),
-            const SizedBox(height: 3),
-            SizedBox(
-              width: 56,
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700],
-                  fontSize: 9,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  height: 1.1,
-                ),
+            child: (imageUrl != null && imageUrl.isNotEmpty)
+                ? ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      fadeInDuration: const Duration(milliseconds: 150),
+                      errorWidget: (_, __, ___) => _categoryFallbackIcon(iconData, emoji, selected),
+                    ),
+                  )
+                : Center(child: _categoryFallbackIcon(iconData, emoji, selected)),
+          ),
+          const SizedBox(height: 3),
+          SizedBox(
+            width: 56,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: selected ? const Color(0xFF0A6EBD) : Colors.grey[700],
+                fontSize: 9,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                height: 1.1,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
