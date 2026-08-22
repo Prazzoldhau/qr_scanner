@@ -20,6 +20,7 @@ final _services = [
   _ServiceItem(icon: Icons.psychology_outlined, label: 'Behavioural Therapy', color: const Color(0xFFAA5AC7)),
   _ServiceItem(icon: Icons.record_voice_over_outlined, label: 'Speech Therapy', color: const Color(0xFFE0A100)),
   _ServiceItem(icon: Icons.self_improvement_outlined, label: 'Occupational Therapy', color: const Color(0xFFD9534F)),
+  _ServiceItem(icon: Icons.healing_outlined, label: 'Nursing', color: const Color(0xFF17A2B8)),
   _ServiceItem(
     icon: Icons.biotech_outlined,
     label: 'Lab (Blood Investigation)',

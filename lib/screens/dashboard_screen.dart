@@ -242,11 +242,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: _quickAction(
                           icon: Icons.person_pin_outlined,
-                          label: 'My Physio',
+                          label: 'Active Care',
                           color: const Color(0xFF6C63FF),
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const PhysioContactScreen()),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: _quickAction(
+                          icon: Icons.local_pharmacy_outlined,
+                          label: 'Pharmacy',
+                          color: const Color(0xFF27AE60),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MarketplaceScreen(
+                                patientData: widget.patientData,
+                                title: 'Pharmacy',
+                                isPharmacy: true,
+                              ),
+                            ),
                           ),
                         ),
                       ),
