@@ -189,17 +189,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       },
                     ),
                   ),
-                // Section header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Products', style: TextStyle(color: Colors.black87, fontSize: 17, fontWeight: FontWeight.bold)),
-                      Text('${_products.length} items', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 8),
                 // Product grid
                 Expanded(
                   child: _products.isEmpty
